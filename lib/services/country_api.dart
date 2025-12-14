@@ -1,0 +1,22 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../models/country.dart';
+
+class CountryApi {
+  // Added 'region' and 'capital' to fields
+  static const String _url = 'https://restcountries.com/v3.1/all?fields=name,cca2,translations,region,capital';
+
+  Future<List<Country>> fetchCountries() async {
+    try {
+      final response = await http.get(Uri.parse(_url));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((json) => Country.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load countries');
+      }
+    } catch (e) {
+      throw Exception('Error fetching data: $e');
+    }
+  }
+}
