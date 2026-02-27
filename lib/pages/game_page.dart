@@ -7,7 +7,10 @@ import '../game/rounds.dart';
 import '../game/scoring.dart';
 import '../models/country.dart';
 import '../models/game_config.dart';
+import '../services/auth_service.dart';
 import '../services/mistakes_provider.dart';
+import '../services/sound_service.dart';
+import '../services/user_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/flag_box.dart';
 import 'result_page.dart';
@@ -104,6 +107,7 @@ class _GamePageState extends State<GamePage> {
 
     final mistakesProv = Provider.of<MistakesProvider>(context, listen: false);
     final l10n = AppLocalizations.of(context)!;
+    final sound = SoundService();
 
     bool correct = false;
 
@@ -118,6 +122,12 @@ class _GamePageState extends State<GamePage> {
       correct = userInput == correctAnswer;
     } else {
       correct = selected!.cca2 == _currentRound!.correctCountry.cca2;
+    }
+
+    if (correct) {
+      sound.playCorrect();
+    } else {
+      sound.playWrong();
     }
 
     if (!correct) {
@@ -143,18 +153,46 @@ class _GamePageState extends State<GamePage> {
   }
 
   void _finishGame() {
+    final played = _questionIndex > _engine.totalQuestions
+        ? _engine.totalQuestions
+        : _questionIndex - 1;
+    SoundService().playSuccess();
+    _recordGameAchievements(played);
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (_) => ResultPage(
           score: _score,
           totalQuestions: _engine.totalQuestions,
-          playedQuestions: _questionIndex > _engine.totalQuestions
-              ? _engine.totalQuestions
-              : _questionIndex - 1,
+          playedQuestions: played,
         ),
       ),
     );
+  }
+
+  Future<void> _recordGameAchievements(int played) async {
+    final auth = context.read<AuthService>();
+    final uid = auth.uid;
+    if (uid == null) return;
+
+    final userSvc = UserService();
+    await userSvc.recordGameResult(uid: uid, score: _score, won: false);
+    await userSvc.updateStreak(uid);
+
+    // Achievements
+    await userSvc.unlockAchievement(uid, 'first_game');
+
+    final maxScore = played * Scoring.correctPoints;
+    if (maxScore > 0 && _score == maxScore) {
+      await userSvc.unlockAchievement(uid, 'perfect_score');
+    }
+    if (_engine.totalQuestions >= 20) {
+      await userSvc.unlockAchievement(uid, 'quiz_master');
+    }
+    if (_engine.totalQuestions >= widget.countries.length &&
+        widget.countries.length > 200) {
+      await userSvc.unlockAchievement(uid, 'world_master');
+    }
   }
 
   Future<bool> _onWillPop() async {

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geoguess_flags/l10n/app_localizations.dart';
 import 'theme/app_theme.dart';
 import 'pages/home_page.dart';
+import 'services/auth_service.dart';
 import 'services/mistakes_provider.dart';
 
 // --- LocaleProvider ---
@@ -40,16 +41,16 @@ class GeoGuessApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // MistakesProvider added here; LocaleProvider + PurchaseService come from main.dart
+    // MistakesProvider added here; LocaleProvider + PurchaseService + AuthService come from main.dart
     return ChangeNotifierProvider(
       create: (_) => MistakesProvider(),
-      child: Consumer<LocaleProvider>(
-        builder: (context, provider, child) {
+      child: Consumer2<LocaleProvider, AuthService>(
+        builder: (context, localeProv, auth, child) {
           return MaterialApp(
             title: 'GeoGuess Flags',
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.themeData(provider.locale),
-            locale: provider.locale,
+            theme: AppTheme.themeData(localeProv.locale),
+            locale: localeProv.locale,
             localizationsDelegates: const [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,

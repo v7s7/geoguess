@@ -5,6 +5,7 @@ import 'package:geoguess_flags/l10n/app_localizations.dart';
 import '../app.dart';
 import '../models/country.dart';
 import '../models/game_config.dart';
+import '../services/auth_service.dart';
 import '../services/country_api.dart';
 import '../services/mistakes_provider.dart';
 import '../services/purchase_service.dart';
@@ -13,6 +14,13 @@ import 'play_setup_page.dart';
 import 'game_page.dart';
 import 'learn_page.dart';
 import 'paywall_page.dart';
+import 'speed_mode_page.dart';
+import 'continent_battle_page.dart';
+import 'leaderboard_page.dart';
+import 'achievements_page.dart';
+import 'profile_page.dart';
+import 'auth/login_page.dart';
+import 'online/multiplayer_lobby_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -79,17 +87,42 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _openLoginOrProfile(BuildContext context) {
+    final auth = context.read<AuthService>();
+    if (auth.isSignedIn) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage()));
+    } else {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+    }
+  }
+
+  void _requireAuth(BuildContext context, Widget Function() builder) {
+    final auth = context.read<AuthService>();
+    if (!auth.isSignedIn) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+      return;
+    }
+    Navigator.push(context, MaterialPageRoute(builder: (_) => builder()));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final localeProv = Provider.of<LocaleProvider>(context);
     final mistakesProv = Provider.of<MistakesProvider>(context);
     final ps = Provider.of<PurchaseService>(context);
+    final auth = Provider.of<AuthService>(context);
 
     return Scaffold(
       body: Column(
         children: [
-          _HeroHeader(isPremium: ps.isPremium, isLoading: _isLoading),
+          _HeroHeader(
+            isPremium: ps.isPremium,
+            isLoading: _isLoading,
+            isSignedIn: auth.isSignedIn,
+            displayName: auth.displayName,
+            onProfileTap: () => _openLoginOrProfile(context),
+          ),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
@@ -140,12 +173,120 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 12),
 
+                  // Online Modes Row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ActionCard(
+                          icon: Icons.wifi_rounded,
+                          label: 'Online Match',
+                          subtitle: 'Play vs a stranger',
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF059669), Color(0xFF10B981)],
+                          ),
+                          delay: 250,
+                          onTap: _isLoading
+                              ? null
+                              : () => _requireAuth(
+                                    context,
+                                    () => MultiplayerLobbyPage(
+                                        countries: _allCountries),
+                                  ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ActionCard(
+                          icon: Icons.bolt_rounded,
+                          label: 'Speed Mode',
+                          subtitle: '60-second sprint',
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFDC2626), Color(0xFFEF4444)],
+                          ),
+                          delay: 300,
+                          onTap: _isLoading
+                              ? null
+                              : () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => SpeedModePage(
+                                          countries: _allCountries),
+                                    ),
+                                  ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Continent Battle (full width)
+                  _WideCard(
+                    icon: Icons.map_rounded,
+                    label: 'Continent Battle',
+                    subtitle: 'Conquer Africa, Europe, Asia & more',
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF7C3AED), Color(0xFF8B5CF6)],
+                    ),
+                    delay: 350,
+                    onTap: _isLoading
+                        ? null
+                        : () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ContinentBattlePage(
+                                    countries: _allCountries),
+                              ),
+                            ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Stats Row: Leaderboard + Achievements
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ActionCard(
+                          icon: Icons.leaderboard_rounded,
+                          label: 'Leaderboard',
+                          subtitle: 'Top players',
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFD97706), Color(0xFFF59E0B)],
+                          ),
+                          delay: 400,
+                          onTap: () => _requireAuth(
+                            context,
+                            () => const LeaderboardPage(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ActionCard(
+                          icon: Icons.military_tech_rounded,
+                          label: 'Achievements',
+                          subtitle: 'Unlock badges',
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF0F766E), Color(0xFF14B8A6)],
+                          ),
+                          delay: 450,
+                          onTap: () => _requireAuth(
+                            context,
+                            () => const AchievementsPage(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
                   // Review Mistakes Card
                   _ReviewCard(
                     mistakesCount: mistakesProv.mistakenCca2s.length,
                     hasMistakes: mistakesProv.hasMistakes && !_isLoading,
                     label: l10n.reviewMistakes,
-                    delay: 300,
+                    delay: 500,
                     onTap: () => _startReview(context, mistakesProv),
                   ),
 
@@ -154,7 +295,7 @@ class _HomePageState extends State<HomePage> {
                   // Premium Card
                   if (!ps.isPremium)
                     _PremiumBannerCard(
-                      delay: 400,
+                      delay: 550,
                       onTap: () async {
                         await Navigator.push(
                           context,
@@ -164,7 +305,7 @@ class _HomePageState extends State<HomePage> {
                       },
                     ),
 
-                  if (ps.isPremium) _PremiumActiveCard(delay: 400),
+                  if (ps.isPremium) _PremiumActiveCard(delay: 550),
 
                   const SizedBox(height: 20),
 
@@ -172,7 +313,7 @@ class _HomePageState extends State<HomePage> {
                   _SettingsCard(
                     localeProv: localeProv,
                     label: l10n.language,
-                    delay: 500,
+                    delay: 600,
                   ),
                 ],
               ),
@@ -186,11 +327,87 @@ class _HomePageState extends State<HomePage> {
 
 // ─── Hero Header ─────────────────────────────────────────────────────────────
 
+class _WideCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final Gradient gradient;
+  final int delay;
+  final VoidCallback? onTap;
+
+  const _WideCard({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.gradient,
+    required this.delay,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 32),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold)),
+                  Text(subtitle,
+                      style: TextStyle(
+                          color: Colors.white.withOpacity(0.75), fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded,
+                color: Colors.white70, size: 16),
+          ],
+        ),
+      ),
+    )
+        .animate()
+        .fadeIn(delay: Duration(milliseconds: delay), duration: 400.ms)
+        .slideY(begin: 0.2, end: 0, curve: Curves.easeOut);
+  }
+}
+
+// ─── Hero Header ─────────────────────────────────────────────────────────────
+
 class _HeroHeader extends StatelessWidget {
   final bool isPremium;
   final bool isLoading;
+  final bool isSignedIn;
+  final String? displayName;
+  final VoidCallback onProfileTap;
 
-  const _HeroHeader({required this.isPremium, required this.isLoading});
+  const _HeroHeader({
+    required this.isPremium,
+    required this.isLoading,
+    required this.isSignedIn,
+    required this.displayName,
+    required this.onProfileTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -219,34 +436,60 @@ class _HeroHeader extends StatelessWidget {
                     child: const Icon(Icons.public_rounded,
                         color: Colors.white, size: 28),
                   ),
-                  if (isPremium)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.workspace_premium,
-                              color: Colors.white, size: 14),
-                          SizedBox(width: 4),
-                          Text(
-                            'PREMIUM',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1,
+                  Row(
+                    children: [
+                      if (isPremium)
+                        Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
                             ),
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                        ],
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.workspace_premium,
+                                  color: Colors.white, size: 14),
+                              SizedBox(width: 4),
+                              Text(
+                                'PREMIUM',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      GestureDetector(
+                        onTap: onProfileTap,
+                        child: CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          child: isSignedIn
+                              ? Text(
+                                  (displayName?.isNotEmpty == true
+                                          ? displayName![0]
+                                          : '?')
+                                      .toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                )
+                              : const Icon(Icons.person_outline_rounded,
+                                  color: Colors.white, size: 20),
+                        ),
                       ),
-                    ),
+                    ],
+                  ),
                 ],
               )
                   .animate()
