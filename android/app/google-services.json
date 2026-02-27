@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "952231467952",
+    "project_id": "geo-guess-2001",
+    "storage_bucket": "geo-guess-2001.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:952231467952:android:fac2fb34c83817b43f1475",
+        "android_client_info": {
+          "package_name": "com.example.geoguess_flags"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDp0gQQaV8msHWojA2Rb4dNnRARRYfbqw0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
