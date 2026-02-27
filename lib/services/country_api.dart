@@ -11,7 +11,10 @@ class CountryApi {
       final response = await http.get(Uri.parse(_url));
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Country.fromJson(json)).toList();
+        return data
+            .map((json) => Country.fromJson(json))
+            .where((c) => c.cca2 != 'IL')
+            .toList();
       } else {
         throw Exception('Failed to load countries');
       }
