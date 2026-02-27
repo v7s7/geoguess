@@ -1,7 +1,7 @@
 name: geoguess_flags
 description: A responsive flag guessing game.
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.2.0+3
 
 environment:
   sdk: ">=3.2.0 <4.0.0"
@@ -18,6 +18,14 @@ dependencies:
   provider: ^6.1.1
   cupertino_icons: ^1.0.6
   google_fonts: ^6.3.3
+  in_app_purchase: ^3.1.13
+  flutter_animate: ^4.5.0
+  # Firebase
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.1
+  # Sound & haptics
+  audioplayers: ^6.1.0
 
 dev_dependencies:
   flutter_test:
@@ -27,3 +35,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+  assets:
+    - assets/sounds/

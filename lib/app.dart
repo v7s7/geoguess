@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:geoguess_flags/l10n/app_localizations.dart'; 
+import 'package:geoguess_flags/l10n/app_localizations.dart';
 import 'theme/app_theme.dart';
 import 'pages/home_page.dart';
+import 'services/auth_service.dart';
 import 'services/mistakes_provider.dart';
 
-// --- 1. Define LocaleProvider Class ---
+// --- LocaleProvider ---
 class LocaleProvider extends ChangeNotifier {
   Locale _locale = const Locale('en');
 
@@ -34,27 +35,22 @@ class LocaleProvider extends ChangeNotifier {
   }
 }
 
-// --- 2. Main App Widget ---
+// --- Main App Widget ---
 class GeoGuessApp extends StatelessWidget {
   const GeoGuessApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => LocaleProvider()),
-        ChangeNotifierProvider(create: (_) => MistakesProvider()),
-      ],
-      child: Consumer<LocaleProvider>(
-        builder: (context, provider, child) {
+    // MistakesProvider added here; LocaleProvider + PurchaseService + AuthService come from main.dart
+    return ChangeNotifierProvider(
+      create: (_) => MistakesProvider(),
+      child: Consumer2<LocaleProvider, AuthService>(
+        builder: (context, localeProv, auth, child) {
           return MaterialApp(
             title: 'GeoGuess Flags',
             debugShowCheckedModeBanner: false,
-            
-            // KEY UPDATE: Use the dynamic theme to switch fonts (Cairo/Poppins)
-            theme: AppTheme.themeData(provider.locale),
-            
-            locale: provider.locale,
+            theme: AppTheme.themeData(localeProv.locale),
+            locale: localeProv.locale,
             localizationsDelegates: const [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
