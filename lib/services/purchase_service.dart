@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart'; // kIsWeb
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,7 +8,10 @@ class PurchaseService extends ChangeNotifier {
   static const String premiumProductId = 'all_flags_pack';
   static const String _premiumKey = 'is_premium';
 
-  final InAppPurchase _iap = InAppPurchase.instance;
+  // Lazy getter — InAppPurchase.instance is NEVER touched on Web,
+  // which prevents the LateInitializationError thrown by the plugin.
+  InAppPurchase get _iap => InAppPurchase.instance;
+
   StreamSubscription<List<PurchaseDetails>>? _subscription;
 
   bool _isPremium = false;
@@ -24,10 +28,7 @@ class PurchaseService extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get purchaseSuccess => _purchaseSuccess;
 
-  String get priceString {
-    if (_product != null) return _product!.price;
-    return '\$1.99';
-  }
+  String get priceString => _product?.price ?? '\$1.99';
 
   PurchaseService() {
     _initialize();
@@ -36,7 +37,12 @@ class PurchaseService extends ChangeNotifier {
   Future<void> _initialize() async {
     final prefs = await SharedPreferences.getInstance();
     _isPremium = prefs.getBool(_premiumKey) ?? false;
-    if (_isPremium) notifyListeners();
+    notifyListeners();
+
+    // IAP plugin does not support Web — skip entirely to avoid
+    // LateInitializationError from the platform channel setup.
+    // iOS / Android follow the full flow below.
+    if (kIsWeb) return;
 
     _isAvailable = await _iap.isAvailable();
     if (!_isAvailable) {
@@ -71,7 +77,15 @@ class PurchaseService extends ChangeNotifier {
     _purchaseSuccess = false;
     _errorMessage = null;
 
-    // If store not available (e.g. simulator), grant premium for testing
+    // Web: no real store — grant premium so the UI stays functional.
+    if (kIsWeb) {
+      await _setPremium(true);
+      _purchaseSuccess = true;
+      notifyListeners();
+      return;
+    }
+
+    // Simulator / store unavailable: grant for testing.
     if (!_isAvailable || _product == null) {
       await _setPremium(true);
       _purchaseSuccess = true;
@@ -88,6 +102,7 @@ class PurchaseService extends ChangeNotifier {
   }
 
   Future<void> restorePurchases() async {
+    if (kIsWeb) return; // no-op on Web
     _errorMessage = null;
     _isLoading = true;
     notifyListeners();
