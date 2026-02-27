@@ -116,7 +116,8 @@ class PurchaseService extends ChangeNotifier {
           _purchaseSuccess = false;
         }
 
-        if (purchase.pendingCompletionData != null) {
+        if (purchase.status == PurchaseStatus.purchased ||
+            purchase.status == PurchaseStatus.restored) {
           await _iap.completePurchase(purchase);
         }
       }
