@@ -20,9 +20,13 @@ class FlagBox extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: CachedNetworkImage(
         imageUrl: url,
-        fit: BoxFit.cover,
-        placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-        errorWidget: (context, url, error) => const Center(child: Icon(Icons.broken_image)),
+        fit: BoxFit.contain,
+        placeholder: (context, url) => const Center(
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        errorWidget: (context, url, error) => const Center(
+          child: Icon(Icons.broken_image_outlined, color: Colors.grey, size: 40),
+        ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:geoguess_flags/l10n/app_localizations.dart';
 import '../game/rounds.dart';
@@ -7,8 +8,8 @@ import '../game/scoring.dart';
 import '../models/country.dart';
 import '../models/game_config.dart';
 import '../services/mistakes_provider.dart';
+import '../theme/app_theme.dart';
 import '../widgets/flag_box.dart';
-import '../widgets/primary_card.dart';
 import 'result_page.dart';
 
 class GamePage extends StatefulWidget {
@@ -29,11 +30,11 @@ class _GamePageState extends State<GamePage> {
   bool _answered = false;
   String? _feedbackMessage;
   bool _isCorrect = false;
+  Country? _selectedOption;
 
   Timer? _timer;
   int _timeLeft = 0;
 
-  // Typing Mode
   final TextEditingController _typeController = TextEditingController();
 
   @override
@@ -57,8 +58,9 @@ class _GamePageState extends State<GamePage> {
       _currentRound = _engine.getNextRound();
       _answered = false;
       _feedbackMessage = null;
+      _selectedOption = null;
       _questionIndex++;
-      
+
       if (_currentRound == null) {
         _finishGame();
       } else if (widget.config.timerSeconds != null) {
@@ -83,42 +85,38 @@ class _GamePageState extends State<GamePage> {
     _submitAnswer(known: false, timeOut: true);
   }
 
-  // --- Normalization Logic (The "Mercy" Function) ---
   String _normalize(String input) {
     String text = input.trim().toLowerCase();
-    
-    // Arabic Normalization
-    text = text.replaceAll(RegExp(r'[أإآ]'), 'ا'); // Normalize Alef
-    text = text.replaceAll('ة', 'ه'); // Normalize Ta Marbuta
-    text = text.replaceAll('ى', 'ي'); // Normalize Ya
-    text = text.replaceAll(RegExp(r'\s+'), ' '); // Collapse multiple spaces
-
-    // Optional: Remove common prefixes like "the" or "al" if you want extra mercy
-    // text = text.replaceAll(RegExp(r'^(the|al)\s+'), ''); 
-
+    text = text.replaceAll(RegExp(r'[أإآ]'), 'ا');
+    text = text.replaceAll('ة', 'ه');
+    text = text.replaceAll('ى', 'ي');
+    text = text.replaceAll(RegExp(r'\s+'), ' ');
     return text;
   }
 
-  void _submitAnswer({bool? known, Country? selected, String? typedText, bool timeOut = false}) {
+  void _submitAnswer(
+      {bool? known,
+      Country? selected,
+      String? typedText,
+      bool timeOut = false}) {
     if (_answered) return;
     _timer?.cancel();
 
     final mistakesProv = Provider.of<MistakesProvider>(context, listen: false);
     final l10n = AppLocalizations.of(context)!;
-    
+
     bool correct = false;
-    
+
     if (timeOut) {
       correct = false;
     } else if (widget.config.mode == GameMode.practice) {
       correct = known == true;
     } else if (widget.config.choicesCount == 0 && typedText != null) {
-      // TYPING MODE CHECK
       final userInput = _normalize(typedText);
-      final correctAnswer = _normalize(_currentRound!.correctCountry.localizedName(context));
+      final correctAnswer =
+          _normalize(_currentRound!.correctCountry.localizedName(context));
       correct = userInput == correctAnswer;
     } else {
-      // MULTIPLE CHOICE CHECK
       correct = selected!.cca2 == _currentRound!.correctCountry.cca2;
     }
 
@@ -131,13 +129,15 @@ class _GamePageState extends State<GamePage> {
     setState(() {
       _answered = true;
       _isCorrect = correct;
+      _selectedOption = selected;
       final correctName = _currentRound!.correctCountry.localizedName(context);
 
       if (correct) {
         _score += Scoring.correctPoints;
-        _feedbackMessage = widget.config.isReviewMode ? l10n.mistakesCleared : null;
+        _feedbackMessage =
+            widget.config.isReviewMode ? l10n.mistakesCleared : null;
       } else {
-        _feedbackMessage = "${l10n.correctAnswerIs} $correctName";
+        _feedbackMessage = '${l10n.correctAnswerIs} $correctName';
       }
     });
   }
@@ -149,20 +149,45 @@ class _GamePageState extends State<GamePage> {
         builder: (_) => ResultPage(
           score: _score,
           totalQuestions: _engine.totalQuestions,
-          playedQuestions: _questionIndex > _engine.totalQuestions ? _engine.totalQuestions : _questionIndex - 1,
+          playedQuestions: _questionIndex > _engine.totalQuestions
+              ? _engine.totalQuestions
+              : _questionIndex - 1,
         ),
       ),
     );
   }
 
-  // ... (Keep _onWillPop and _buildHintChip methods same as before) ...
   Future<bool> _onWillPop() async {
     final l10n = AppLocalizations.of(context)!;
-    return await showDialog(context: context, builder: (context) => AlertDialog(title: Text(l10n.endGame), content: Text(l10n.endGameConfirm), actions: [TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancel)), TextButton(onPressed: () => Navigator.of(context).pop(true), child: Text(l10n.yes))])) ?? false;
+    return await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text(l10n.endGame),
+            content: Text(l10n.endGameConfirm),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(l10n.cancel)),
+              FilledButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: Text(l10n.yes)),
+            ],
+          ),
+        ) ??
+        false;
   }
 
-  Widget _buildHintChip(BuildContext context, String label, String value, IconData icon) {
-    return Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), decoration: BoxDecoration(color: Colors.indigo.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.indigo.shade100)), child: Row(children: [Icon(icon, size: 16, color: Colors.indigo), const SizedBox(width: 8), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)), Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.indigo))])]));
+  double get _timerProgress {
+    if (widget.config.timerSeconds == null) return 1.0;
+    return _timeLeft / widget.config.timerSeconds!;
+  }
+
+  Color get _timerColor {
+    if (_timerProgress > 0.5) return AppColors.success;
+    if (_timerProgress > 0.25) return AppColors.warning;
+    return AppColors.error;
   }
 
   @override
@@ -173,115 +198,547 @@ class _GamePageState extends State<GamePage> {
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        appBar: AppBar(
-          title: Text("${l10n.question} $_questionIndex / ${_engine.totalQuestions}"),
-          actions: [Center(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Text("${l10n.score}: $_score", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))))],
-        ),
         body: Column(
           children: [
-            if (widget.config.timerSeconds != null)
-              LinearProgressIndicator(value: _timeLeft / widget.config.timerSeconds!, color: _timeLeft < 5 ? Colors.red : Colors.green, backgroundColor: Colors.grey.shade200),
-            
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+            // ─── Header ─────────────────────────────────────────
+            Container(
+              decoration:
+                  const BoxDecoration(gradient: AppColors.gradientPrimary),
+              child: SafeArea(
+                bottom: false,
                 child: Column(
                   children: [
-                    FlagBox(url: _currentRound!.correctCountry.flagUrl),
-                    const SizedBox(height: 24),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 4, 16, 12),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded,
+                                color: Colors.white70),
+                            onPressed: () async {
+                              if (await _onWillPop()) _finishGame();
+                            },
+                          ),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Text(
+                                  '${l10n.question} ${_questionIndex > _engine.totalQuestions ? _engine.totalQuestions : _questionIndex} / ${_engine.totalQuestions}',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                // Progress bar
+                                const SizedBox(height: 6),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: LinearProgressIndicator(
+                                    value: (_questionIndex - 1) /
+                                        _engine.totalQuestions,
+                                    backgroundColor:
+                                        Colors.white.withOpacity(0.2),
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                            Colors.white),
+                                    minHeight: 4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Score badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.star_rounded,
+                                    color: Colors.amber, size: 16),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$_score',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Timer bar
+                    if (widget.config.timerSeconds != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        child: Row(
+                          children: [
+                            Icon(Icons.timer_rounded,
+                                color: _timerColor, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: _timerProgress,
+                                  backgroundColor:
+                                      Colors.white.withOpacity(0.2),
+                                  valueColor:
+                                      AlwaysStoppedAnimation<Color>(_timerColor),
+                                  minHeight: 6,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${_timeLeft}s',
+                              style: TextStyle(
+                                color: _timerColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ─── Game Content ────────────────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    // Question prompt
+                    Text(
+                      l10n.whatCountry,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade600,
+                      ),
+                    ).animate().fadeIn(duration: 300.ms),
+
+                    const SizedBox(height: 16),
+
+                    // Flag
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.12),
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: FlagBox(
+                            url: _currentRound!.correctCountry.flagUrl,
+                            height: 180),
+                      ),
+                    )
+                        .animate(key: ValueKey(_currentRound!.correctCountry.cca2))
+                        .fadeIn(duration: 400.ms)
+                        .scale(begin: const Offset(0.92, 0.92), end: const Offset(1, 1), curve: Curves.easeOut),
+
+                    const SizedBox(height: 16),
 
                     // Hints
-                    if (widget.config.showRegionHint || widget.config.showCapitalHint) ...[
-                      Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                          if (widget.config.showRegionHint) _buildHintChip(context, l10n.region, _currentRound!.correctCountry.localizedRegion(context), Icons.public),
-                          if (widget.config.showCapitalHint) _buildHintChip(context, l10n.capital, _currentRound!.correctCountry.capital, Icons.location_city),
-                      ]),
-                      const SizedBox(height: 24),
+                    if (widget.config.showRegionHint ||
+                        widget.config.showCapitalHint) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (widget.config.showRegionHint)
+                            _HintChip(
+                              icon: Icons.public_rounded,
+                              label: l10n.region,
+                              value: _currentRound!.correctCountry
+                                  .localizedRegion(context),
+                            ),
+                          if (widget.config.showRegionHint &&
+                              widget.config.showCapitalHint)
+                            const SizedBox(width: 8),
+                          if (widget.config.showCapitalHint)
+                            _HintChip(
+                              icon: Icons.location_city_rounded,
+                              label: l10n.capital,
+                              value: _currentRound!.correctCountry.capital,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
                     ],
-                    
-                    // --- INPUT AREA ---
+
+                    // ─── Input Area ──────────────────────────────
                     if (widget.config.mode == GameMode.practice) ...[
-                      Text(l10n.whatCountry, style: Theme.of(context).textTheme.headlineSmall),
-                      const SizedBox(height: 32),
-                      if (!_answered) ...[
-                         Row(children: [
-                             Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade100, foregroundColor: Colors.red), onPressed: () => _submitAnswer(known: false), child: Text(l10n.iDontKnowIt))),
-                             const SizedBox(width: 16),
-                             Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade100, foregroundColor: Colors.green), onPressed: () => _submitAnswer(known: true), child: Text(l10n.iKnowIt))),
-                         ])
-                      ],
+                      if (!_answered)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _AnswerButton(
+                                label: l10n.iDontKnowIt,
+                                color: AppColors.error,
+                                icon: Icons.close_rounded,
+                                onTap: () => _submitAnswer(known: false),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _AnswerButton(
+                                label: l10n.iKnowIt,
+                                color: AppColors.success,
+                                icon: Icons.check_rounded,
+                                onTap: () => _submitAnswer(known: true),
+                              ),
+                            ),
+                          ],
+                        ),
                     ] else if (widget.config.choicesCount == 0) ...[
-                      // --- TYPING MODE ---
+                      // Typing Mode
                       if (!_answered) ...[
                         TextField(
                           controller: _typeController,
                           decoration: InputDecoration(
                             hintText: l10n.typeAnswer,
-                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.keyboard_alt_outlined,
+                                color: AppColors.primary),
                             suffixIcon: IconButton(
-                              icon: const Icon(Icons.send, color: Colors.indigo),
-                              onPressed: () => _submitAnswer(typedText: _typeController.text),
+                              icon: const Icon(Icons.send_rounded,
+                                  color: AppColors.primary),
+                              onPressed: () =>
+                                  _submitAnswer(typedText: _typeController.text),
                             ),
                           ),
                           onSubmitted: (val) => _submitAnswer(typedText: val),
                           textInputAction: TextInputAction.done,
+                          autofocus: true,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         SizedBox(
                           width: double.infinity,
-                          height: 50,
-                          child: FilledButton(
-                            onPressed: () => _submitAnswer(typedText: _typeController.text), 
-                            child: Text(l10n.submit)
+                          height: 52,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: AppColors.gradientPrimary,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: ElevatedButton(
+                              onPressed: () =>
+                                  _submitAnswer(typedText: _typeController.text),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                              ),
+                              child: Text(l10n.submit,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16)),
+                            ),
                           ),
                         ),
                       ],
                     ] else ...[
-                      // --- MULTIPLE CHOICE MODE ---
+                      // Multiple Choice
                       if (!_answered)
-                        ..._currentRound!.options.map((option) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(padding: const EdgeInsets.all(16), textStyle: const TextStyle(fontSize: 18)),
-                              onPressed: () => _submitAnswer(selected: option),
-                              child: Text(option.localizedName(context)),
-                            ),
-                          ),
-                        )),
+                        ..._currentRound!.options.asMap().entries.map((entry) {
+                          final i = entry.key;
+                          final option = entry.value;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _ChoiceButton(
+                              option: option,
+                              onTap: () =>
+                                  _submitAnswer(selected: option),
+                            )
+                                .animate()
+                                .fadeIn(
+                                    delay: Duration(milliseconds: 50 + i * 60),
+                                    duration: 300.ms)
+                                .slideY(
+                                    begin: 0.15,
+                                    end: 0,
+                                    delay: Duration(milliseconds: 50 + i * 60)),
+                          );
+                        }),
                     ],
 
-                    // --- FEEDBACK AREA ---
+                    // ─── Feedback ────────────────────────────────
                     if (_answered) ...[
-                      const SizedBox(height: 24),
-                      PrimaryCard(
-                        color: _isCorrect ? Colors.green.shade50 : Colors.red.shade50,
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(_isCorrect ? Icons.check_circle : Icons.cancel, color: _isCorrect ? Colors.green : Colors.red, size: 32),
-                                const SizedBox(width: 8),
-                                Expanded(child: Text(_currentRound!.correctCountry.localizedName(context), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
-                              ],
+                      const SizedBox(height: 8),
+                      _FeedbackCard(
+                        isCorrect: _isCorrect,
+                        countryName: _currentRound!.correctCountry
+                            .localizedName(context),
+                        message: _feedbackMessage,
+                      )
+                          .animate()
+                          .fadeIn(duration: 400.ms)
+                          .scale(
+                              begin: const Offset(0.95, 0.95),
+                              end: const Offset(1, 1),
+                              curve: Curves.elasticOut),
+
+                      const SizedBox(height: 16),
+
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: AppColors.gradientPrimary,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.35),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton.icon(
+                            onPressed: _nextRound,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16)),
                             ),
-                            if (_feedbackMessage != null) Padding(padding: const EdgeInsets.only(top: 8.0), child: Text(_feedbackMessage!, style: TextStyle(color: _isCorrect ? Colors.green.shade700 : Colors.red.shade700))),
-                          ],
+                            icon: const Icon(Icons.arrow_forward_rounded),
+                            label: Text(l10n.next,
+                                style: const TextStyle(
+                                    fontSize: 17, fontWeight: FontWeight.bold)),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(width: double.infinity, height: 56, child: FilledButton(onPressed: _nextRound, child: Text(l10n.next))),
-                    ]
+                      )
+                          .animate()
+                          .fadeIn(delay: 200.ms)
+                          .slideY(begin: 0.2, end: 0),
+                    ],
                   ],
                 ),
               ),
             ),
-            
-            Padding(padding: const EdgeInsets.all(16.0), child: TextButton.icon(icon: const Icon(Icons.exit_to_app, color: Colors.grey), label: Text(l10n.endGame, style: const TextStyle(color: Colors.grey)), onPressed: () async { if (await _onWillPop()) _finishGame(); })),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── Hint Chip ────────────────────────────────────────────────────────────────
+
+class _HintChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _HintChip(
+      {required this.icon, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style:
+                      TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+              Text(value,
+                  style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Choice Button ────────────────────────────────────────────────────────────
+
+class _ChoiceButton extends StatelessWidget {
+  final Country option;
+  final VoidCallback onTap;
+
+  const _ChoiceButton({required this.option, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Text(
+          option.localizedName(context),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Answer Button (Practice Mode) ───────────────────────────────────────────
+
+class _AnswerButton extends StatelessWidget {
+  final String label;
+  final Color color;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _AnswerButton({
+    required this.label,
+    required this.color,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.4)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                  color: color, fontWeight: FontWeight.bold, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Feedback Card ────────────────────────────────────────────────────────────
+
+class _FeedbackCard extends StatelessWidget {
+  final bool isCorrect;
+  final String countryName;
+  final String? message;
+
+  const _FeedbackCard({
+    required this.isCorrect,
+    required this.countryName,
+    this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isCorrect ? AppColors.success : AppColors.error;
+    final bgColor = isCorrect ? AppColors.successLight : AppColors.errorLight;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isCorrect ? Icons.check_rounded : Icons.close_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  countryName,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: color.withOpacity(0.9),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+          if (message != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              message!,
+              style: TextStyle(color: color.withOpacity(0.8), fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ],
       ),
     );
   }

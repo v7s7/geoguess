@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geoguess_flags/l10n/app_localizations.dart';
 import '../models/country.dart';
+import '../theme/app_theme.dart';
 import '../widgets/flag_box.dart';
 
 class LearnPage extends StatefulWidget {
@@ -29,28 +30,57 @@ class _LearnPageState extends State<LearnPage> {
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.learn),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: l10n.search,
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
-              ),
-              onChanged: (val) => setState(() => _searchQuery = val),
-            ),
-          ),
-        ),
-      ),
       body: Column(
         children: [
+          // Gradient header with search
+          Container(
+            decoration: const BoxDecoration(gradient: AppColors.gradientPrimary),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 4, 16, 16),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                              color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        Text(
+                          l10n.learn,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: l10n.search,
+                          prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                        ),
+                        onChanged: (val) => setState(() => _searchQuery = val),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
           // 2. Continent Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -180,7 +210,7 @@ class _LearnPageState extends State<LearnPage> {
               // Name
               Text(
                 country.localizedName(context),
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.indigo),
+                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.primary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
@@ -211,8 +241,8 @@ class _LearnPageState extends State<LearnPage> {
       children: [
         CircleAvatar(
           radius: 24,
-          backgroundColor: Colors.indigo.shade50,
-          child: Icon(icon, color: Colors.indigo),
+          backgroundColor: AppColors.background,
+          child: Icon(icon, color: AppColors.primary),
         ),
         const SizedBox(height: 8),
         Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
