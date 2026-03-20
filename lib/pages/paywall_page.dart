@@ -26,6 +26,7 @@ class _PaywallPageState extends State<PaywallPage> {
 
   void _onPurchaseUpdate() {
     final ps = _ps;
+    if (ps == null) return;
     if (ps.purchaseSuccess && mounted) {
       ps.clearPurchaseSuccess();
       Navigator.of(context).pop(true);
