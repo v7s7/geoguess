@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/country.dart';
@@ -8,7 +9,9 @@ class CountryApi {
 
   Future<List<Country>> fetchCountries() async {
     try {
-      final response = await http.get(Uri.parse(_url));
+      final response = await http
+          .get(Uri.parse(_url))
+          .timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         return data
@@ -16,7 +19,7 @@ class CountryApi {
             .where((c) => c.cca2 != 'IL')
             .toList();
       } else {
-        throw Exception('Failed to load countries');
+        throw Exception('Server returned ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Error fetching data: $e');

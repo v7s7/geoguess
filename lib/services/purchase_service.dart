@@ -85,10 +85,14 @@ class PurchaseService extends ChangeNotifier {
       return;
     }
 
-    // Simulator / store unavailable: grant for testing.
+    // Store unavailable or product not loaded yet.
+    // On a real device / TestFlight this only fires if App Store Connect
+    // does not have the product configured — fix: create the in-app purchase
+    // product "all_flags_pack" in App Store Connect and set it to "Ready to Submit".
     if (!_isAvailable || _product == null) {
-      await _setPremium(true);
-      _purchaseSuccess = true;
+      _errorMessage = _isAvailable
+          ? 'Product not found. Please contact support.'
+          : 'In-App Purchases are not available on this device.';
       _isLoading = false;
       notifyListeners();
       return;
