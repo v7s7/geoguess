@@ -18,8 +18,8 @@ import 'result_page.dart';
 class GamePage extends StatefulWidget {
   final List<Country> countries;
   final GameConfig config;
-  /// Optional callback invoked with the final score when the game ends.
-  final void Function(int score)? onFinished;
+  /// Optional callback invoked with the final score and correct answer count when the game ends.
+  final void Function(int score, int correctAnswers)? onFinished;
 
   const GamePage({
     super.key,
@@ -196,7 +196,7 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
         : _questionIndex - 1;
     SoundService().playSuccess();
     _recordGameAchievements(played);
-    widget.onFinished?.call(_score);
+    widget.onFinished?.call(_score, _correctCount);
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(

@@ -71,14 +71,14 @@ class _ContinentBattlePageState extends State<ContinentBattlePage> {
         builder: (_) => GamePage(
           countries: filtered,
           config: config,
-          onFinished: (score) => _onBattleFinished(info, filtered.length, score),
+          onFinished: (score, correctAnswers) => _onBattleFinished(info, filtered.length, correctAnswers),
         ),
       ),
     );
   }
 
-  Future<void> _onBattleFinished(_ContinentInfo info, int totalFlags, int score) async {
-    final accuracy = totalFlags > 0 ? score / (totalFlags * 100) : 0.0;
+  Future<void> _onBattleFinished(_ContinentInfo info, int totalFlags, int correctAnswers) async {
+    final accuracy = totalFlags > 0 ? correctAnswers / totalFlags : 0.0;
     final newStars = accuracy >= 0.9 ? 3 : accuracy >= 0.7 ? 2 : accuracy >= 0.5 ? 1 : 0;
     final uid = context.read<AuthService>().uid;
     if (uid != null) {
