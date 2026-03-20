@@ -18,8 +18,11 @@ import 'result_page.dart';
 class GamePage extends StatefulWidget {
   final List<Country> countries;
   final GameConfig config;
+  /// Optional callback invoked with the final score when the game ends.
+  /// Use this when you need the score without navigating to ResultPage.
+  final void Function(int score)? onFinished;
 
-  const GamePage({super.key, required this.countries, required this.config});
+  const GamePage({super.key, required this.countries, required this.config, this.onFinished});
 
   @override
   State<GamePage> createState() => _GamePageState();
@@ -158,6 +161,8 @@ class _GamePageState extends State<GamePage> {
         : _questionIndex - 1;
     SoundService().playSuccess();
     _recordGameAchievements(played);
+    // Notify caller (e.g. ContinentBattlePage) with the score before navigating.
+    widget.onFinished?.call(_score);
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -233,8 +238,14 @@ class _GamePageState extends State<GamePage> {
     if (_currentRound == null) return const Scaffold();
     final l10n = AppLocalizations.of(context)!;
 
-    return WillPopScope(
-      onWillPop: _onWillPop,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (await _onWillPop() && context.mounted) {
+          _finishGame();
+        }
+      },
       child: Scaffold(
         body: Column(
           children: [

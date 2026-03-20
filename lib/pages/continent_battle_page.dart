@@ -52,7 +52,7 @@ class _ContinentBattlePageState extends State<ContinentBattlePage> {
 
   int _starsFor(String region) => _stars[region] ?? 0;
 
-  void _startBattle(_ContinentInfo info) async {
+  void _startBattle(_ContinentInfo info) {
     final filtered = widget.countries
         .where((c) => c.region == info.region)
         .toList();
@@ -65,22 +65,25 @@ class _ContinentBattlePageState extends State<ContinentBattlePage> {
       choicesCount: 4,
     );
 
-    final result = await Navigator.push<int>(
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => GamePage(
           countries: filtered,
           config: config,
+          onFinished: (score) => _onBattleFinished(info, filtered.length, score),
         ),
       ),
     );
+  }
 
-    if (result != null && mounted) {
-      final accuracy = result / (filtered.length * 100);
-      final newStars = accuracy >= 0.9 ? 3 : accuracy >= 0.7 ? 2 : accuracy >= 0.5 ? 1 : 0;
-      final uid = context.read<AuthService>().uid;
-      if (uid != null) {
-        await UserService().updateContinentStars(uid, info.region, newStars);
+  Future<void> _onBattleFinished(_ContinentInfo info, int totalFlags, int score) async {
+    final accuracy = totalFlags > 0 ? score / (totalFlags * 100) : 0.0;
+    final newStars = accuracy >= 0.9 ? 3 : accuracy >= 0.7 ? 2 : accuracy >= 0.5 ? 1 : 0;
+    final uid = context.read<AuthService>().uid;
+    if (uid != null) {
+      await UserService().updateContinentStars(uid, info.region, newStars);
+      if (mounted) {
         setState(() {
           final current = _stars[info.region] ?? 0;
           if (newStars > current) _stars = Map.from(_stars)..[info.region] = newStars;

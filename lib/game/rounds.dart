@@ -34,9 +34,9 @@ class GameEngine {
     final correct = _shuffledPool[_currentIndex];
     List<Country> options = [];
 
-    // FIX: Only generate options if we are in Quiz Mode AND choices > 1.
-    // If choices == 0 (Text Mode), we skip this block, leaving options empty.
-    if (_config.mode == GameMode.quiz && _config.choicesCount > 1) {
+    // Only generate options in Quiz Mode with at least 1 choice.
+    // choices == 0 means Text Mode — skip this block, leaving options empty.
+    if (_config.mode == GameMode.quiz && _config.choicesCount >= 1) {
       final distractors = List<Country>.from(_allCountries)
         ..removeWhere((c) => c.cca2 == correct.cca2)
         ..shuffle(_rnd);
