@@ -1,75 +1,53 @@
 import 'dart:async';
 
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'app.dart';
-import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'services/purchase_service.dart';
-
-// ─── Startup Debug Log ───────────────────────────────────────────────────────
-// TEMPORARY: tracks startup milestones. Remove before final App Store release.
-// To view: Xcode → Window → Devices and Simulators → select device → open logs
-void _log(String msg) {
-  // ignore: avoid_print
-  if (kDebugMode) print('[GeoGuess] $msg');
-}
+import 'startup_logger.dart';
 
 // ─── Global Error Handlers ───────────────────────────────────────────────────
 void _setupErrorHandlers() {
-  // Catches Flutter framework errors (bad widget builds, etc.)
   FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details); // still prints in debug
-    _log('FlutterError: ${details.exceptionAsString()}');
+    FlutterError.presentError(details);
+    startupLog('FlutterError: ${details.exceptionAsString()}');
   };
 
-  // Catches errors outside the Flutter framework (async errors, isolates)
   PlatformDispatcher.instance.onError = (error, stack) {
-    _log('PlatformDispatcher error: $error\n$stack');
-    return true; // returning true suppresses the default crash
+    startupLog('PlatformDispatcher error: $error');
+    debugPrintStack(stackTrace: stack, label: '[GeoGuess][startup]');
+    return false;
   };
 }
 
-// ─── Firebase Init ───────────────────────────────────────────────────────────
-// Initialises Firebase with a hard 5-second timeout so the app always
-// reaches runApp() even if Firebase hangs (mismatched config, no network, etc.)
-Future<void> _initFirebaseSafe() async {
+Future<void> _lockOrientation() async {
   try {
-    _log('Firebase.initializeApp starting…');
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    ).timeout(const Duration(seconds: 5));
-    _log('Firebase.initializeApp done');
+    startupLog('before orientation lock');
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]).timeout(const Duration(seconds: 2));
+    startupLog('after orientation lock');
   } on TimeoutException {
-    _log('Firebase.initializeApp TIMED OUT — continuing without Firebase');
-  } catch (e) {
-    // Mismatched App ID, duplicate-app, or any other Firebase error.
-    // The app still runs — auth/Firestore features will be unavailable.
-    _log('Firebase.initializeApp ERROR (non-fatal): $e');
+    startupLog('orientation lock timed out; continuing');
+  } catch (e, stack) {
+    startupLog('orientation lock failed: $e');
+    debugPrintStack(stackTrace: stack, label: '[GeoGuess][startup]');
   }
 }
 
 // ─── Entry Point ─────────────────────────────────────────────────────────────
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  _log('main() started');
+  startupLog('app entered main');
 
   _setupErrorHandlers();
 
   Animate.restartOnHotReload = true;
-
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-  _log('orientations locked');
-
-  await _initFirebaseSafe();
-  _log('calling runApp()');
+  startupLog('before runApp');
 
   runApp(
     MultiProvider(
@@ -81,6 +59,7 @@ void main() async {
       child: const GeoGuessApp(),
     ),
   );
+  startupLog('after runApp');
 
-  _log('runApp() returned');
+  unawaited(_lockOrientation());
 }

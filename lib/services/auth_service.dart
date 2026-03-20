@@ -1,27 +1,57 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import '../startup_logger.dart';
 import 'user_service.dart';
 
 class AuthService extends ChangeNotifier {
   FirebaseAuth? _auth;
+  StreamSubscription<User?>? _authSubscription;
+  bool _isInitialized = false;
+  String? _startupError;
 
   User? get currentUser {
     try { return _auth?.currentUser; } catch (_) { return null; }
   }
   bool get isSignedIn => currentUser != null;
+  bool get isInitialized => _isInitialized;
+  bool get isAvailable => _auth != null;
   String? get uid => currentUser?.uid;
   String? get displayName => currentUser?.displayName;
+  String? get startupError => _startupError;
 
   Stream<User?> get authStateChanges =>
       _auth?.authStateChanges() ?? const Stream.empty();
 
-  AuthService() {
+  AuthService();
+
+  Future<void> initialize() async {
+    if (_isInitialized) return;
+
+    startupLog('before auth/session restore');
     try {
       _auth = FirebaseAuth.instance;
-      _auth!.authStateChanges().listen((_) => notifyListeners());
-    } catch (_) {
-      // Firebase not initialized — app runs without auth features
+      _authSubscription = _auth!.authStateChanges().listen((_) => notifyListeners());
+      _startupError = null;
+      startupLog('after auth/session restore');
+    } catch (e, stack) {
+      _auth = null;
+      _startupError = e.toString();
+      startupLog('auth/session restore failed: $e');
+      debugPrintStack(stackTrace: stack, label: '[GeoGuess][startup]');
+    } finally {
+      _isInitialized = true;
+      notifyListeners();
     }
+  }
+
+  void markUnavailable([String? reason]) {
+    if (_isInitialized) return;
+    _startupError = reason;
+    _isInitialized = true;
+    startupLog('auth/session restore skipped: ${reason ?? 'Firebase unavailable'}');
+    notifyListeners();
   }
 
   Future<String?> signUp({
@@ -29,7 +59,7 @@ class AuthService extends ChangeNotifier {
     required String password,
     required String username,
   }) async {
-    if (_auth == null) return 'Firebase is not configured yet.';
+    if (_auth == null) return 'Authentication is currently unavailable.';
     try {
       final cred = await _auth!.createUserWithEmailAndPassword(
         email: email.trim(),
@@ -62,7 +92,7 @@ class AuthService extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
-    if (_auth == null) return 'Firebase is not configured yet.';
+    if (_auth == null) return 'Authentication is currently unavailable.';
     try {
       await _auth!.signInWithEmailAndPassword(
         email: email.trim(),
@@ -80,6 +110,12 @@ class AuthService extends ChangeNotifier {
   Future<void> signOut() async {
     try { await _auth?.signOut(); } catch (_) {}
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   String _authError(String code) {

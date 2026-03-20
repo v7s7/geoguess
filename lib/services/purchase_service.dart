@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart'; // kIsWeb
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../startup_logger.dart';
 
 class PurchaseService extends ChangeNotifier {
   static const String premiumProductId = 'all_flags_pack';
@@ -35,31 +36,45 @@ class PurchaseService extends ChangeNotifier {
   }
 
   Future<void> _initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    _isPremium = prefs.getBool(_premiumKey) ?? false;
-    notifyListeners();
-
-    // IAP plugin does not support Web — skip entirely to avoid
-    // LateInitializationError from the platform channel setup.
-    // iOS / Android follow the full flow below.
-    if (kIsWeb) return;
-
-    _isAvailable = await _iap.isAvailable();
-    if (!_isAvailable) {
+    startupLog('purchase service init started');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _isPremium = prefs.getBool(_premiumKey) ?? false;
       notifyListeners();
-      return;
-    }
 
-    _subscription = _iap.purchaseStream.listen(
-      _onPurchaseUpdate,
-      onError: (error) {
-        _errorMessage = error.toString();
-        _isLoading = false;
+      // IAP plugin does not support Web — skip entirely to avoid
+      // LateInitializationError from the platform channel setup.
+      // iOS / Android follow the full flow below.
+      if (kIsWeb) {
+        startupLog('purchase service init skipped on web');
+        return;
+      }
+
+      _isAvailable = await _iap.isAvailable();
+      if (!_isAvailable) {
         notifyListeners();
-      },
-    );
+        startupLog('purchase service unavailable on this device');
+        return;
+      }
 
-    await _loadProduct();
+      _subscription = _iap.purchaseStream.listen(
+        _onPurchaseUpdate,
+        onError: (error) {
+          _errorMessage = error.toString();
+          _isLoading = false;
+          notifyListeners();
+          startupLog('purchase stream error: $error');
+        },
+      );
+
+      await _loadProduct();
+      startupLog('purchase service init finished');
+    } catch (e, stack) {
+      _errorMessage = 'Store services are temporarily unavailable.';
+      startupLog('purchase service init failed: $e');
+      debugPrintStack(stackTrace: stack, label: '[GeoGuess][startup]');
+      notifyListeners();
+    }
   }
 
   Future<void> _loadProduct() async {
