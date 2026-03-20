@@ -8,12 +8,6 @@ import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'services/purchase_service.dart';
 
-Future<void> _initFirebase() async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-}
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -26,6 +20,13 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
+  // Firebase init is fast (< 200 ms). Awaiting it here means AuthService
+  // is always ready when providers are created, but we no longer block the
+  // UI inside the app with a FutureBuilder.
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  ).catchError((_) {});
+
   runApp(
     MultiProvider(
       providers: [
@@ -33,7 +34,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => PurchaseService()),
         ChangeNotifierProvider(create: (_) => AuthService()),
       ],
-      child: GeoGuessApp(firebaseFuture: _initFirebase()),
+      child: const GeoGuessApp(),
     ),
   );
 }
