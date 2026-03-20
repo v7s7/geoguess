@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -40,13 +42,10 @@ Future<void> _initFirebaseSafe() async {
     _log('Firebase.initializeApp starting…');
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
-    ).timeout(
-      const Duration(seconds: 5),
-      onTimeout: () {
-        _log('Firebase.initializeApp TIMED OUT — continuing without Firebase');
-      },
-    );
+    ).timeout(const Duration(seconds: 5));
     _log('Firebase.initializeApp done');
+  } on TimeoutException {
+    _log('Firebase.initializeApp TIMED OUT — continuing without Firebase');
   } catch (e) {
     // Mismatched App ID, duplicate-app, or any other Firebase error.
     // The app still runs — auth/Firestore features will be unavailable.
