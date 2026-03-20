@@ -41,7 +41,6 @@ class GeoGuessApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // MistakesProvider added here; LocaleProvider + PurchaseService + AuthService come from main.dart
     return ChangeNotifierProvider(
       create: (_) => MistakesProvider(),
       child: Consumer<LocaleProvider>(
@@ -61,13 +60,33 @@ class GeoGuessApp extends StatelessWidget {
               Locale('en'),
               Locale('ar'),
             ],
-            // Show home page immediately — Firebase initialises in the
-            // background (see main.dart). Auth-dependent features listen
-            // reactively via AuthService, so no blocking wait is needed.
-            home: const HomePage(),
+            // Show a plain background while the localization delegate loads
+            // (usually only one frame on first cold launch). This prevents the
+            // HomePage from crashing if AppLocalizations.of(context) is null.
+            home: const _AppStartup(),
           );
         },
       ),
     );
+  }
+}
+
+// Guards the first frame: only renders HomePage once localizations are ready.
+// On every platform this resolves within 1-2 frames — effectively invisible.
+class _AppStartup extends StatelessWidget {
+  const _AppStartup();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      // Localizations not yet loaded — show background colour only.
+      // This prevents the null-bang (!) in HomePage from crashing in release.
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: SizedBox.shrink(),
+      );
+    }
+    return const HomePage();
   }
 }

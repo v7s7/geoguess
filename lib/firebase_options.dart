@@ -53,7 +53,8 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCWGYiJDfWIomZHJ2iXntpo8pocAYZFVK8',
-    appId: '1:952231467952:ios:f60b4a508f827a8c3f1475',
+    // App ID must match GOOGLE_APP_ID in ios/Runner/GoogleService-Info.plist
+    appId: '1:952231467952:ios:1477848ef85138e73f1475',
     messagingSenderId: '952231467952',
     projectId: 'geo-guess-2001',
     storageBucket: 'geo-guess-2001.firebasestorage.app',
