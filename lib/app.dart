@@ -37,15 +37,17 @@ class LocaleProvider extends ChangeNotifier {
 
 // --- Main App Widget ---
 class GeoGuessApp extends StatelessWidget {
-  const GeoGuessApp({super.key});
+  final Future<void> firebaseFuture;
+
+  const GeoGuessApp({super.key, required this.firebaseFuture});
 
   @override
   Widget build(BuildContext context) {
     // MistakesProvider added here; LocaleProvider + PurchaseService + AuthService come from main.dart
     return ChangeNotifierProvider(
       create: (_) => MistakesProvider(),
-      child: Consumer2<LocaleProvider, AuthService>(
-        builder: (context, localeProv, auth, child) {
+      child: Consumer<LocaleProvider>(
+        builder: (context, localeProv, child) {
           return MaterialApp(
             title: 'GeoGuess Flags',
             debugShowCheckedModeBanner: false,
@@ -61,7 +63,17 @@ class GeoGuessApp extends StatelessWidget {
               Locale('en'),
               Locale('ar'),
             ],
-            home: const HomePage(),
+            home: FutureBuilder<void>(
+              future: firebaseFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                return const HomePage();
+              },
+            ),
           );
         },
       ),
