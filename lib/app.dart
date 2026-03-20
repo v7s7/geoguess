@@ -67,9 +67,18 @@ class GeoGuessApp extends StatelessWidget {
               future: firebaseFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) {
+                  // Explicit backgroundColor prevents a black flash on iOS
+                  // before the theme is fully applied on the first frame.
                   return const Scaffold(
+                    backgroundColor: Color(0xFFF0F4FF),
                     body: Center(child: CircularProgressIndicator()),
                   );
+                }
+                if (snapshot.hasError) {
+                  // Firebase failed to initialise (e.g. config mismatch).
+                  // Show the home page anyway — it handles missing auth
+                  // gracefully, and non-Firebase features still work.
+                  return const HomePage();
                 }
                 return const HomePage();
               },
