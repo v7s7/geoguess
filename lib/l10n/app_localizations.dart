@@ -439,6 +439,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Typing Mode (No Choices)'**
   String get typeMode;
+
+  /// No description provided for @onlineMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Online Match'**
+  String get onlineMatch;
+
+  /// No description provided for @onlineMatchDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Play 20 flags vs a random player\n10 choices per question'**
+  String get onlineMatchDesc;
+
+  /// No description provided for @findMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Match'**
+  String get findMatch;
+
+  /// No description provided for @searchingOpponent.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching for opponent...'**
+  String get searchingOpponent;
+
+  /// No description provided for @findingBestMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding the best match for you'**
+  String get findingBestMatch;
+
+  /// No description provided for @waitingForPlayer.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for a player...'**
+  String get waitingForPlayer;
+
+  /// No description provided for @roomCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Room created! Hang tight.'**
+  String get roomCreated;
+
+  /// No description provided for @youWon.
+  ///
+  /// In en, this message translates to:
+  /// **'🏆 You Won!'**
+  String get youWon;
+
+  /// No description provided for @youLost.
+  ///
+  /// In en, this message translates to:
+  /// **'😔 You Lost'**
+  String get youLost;
+
+  /// No description provided for @waitingForOpponentFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for opponent to finish...'**
+  String get waitingForOpponentFinish;
+
+  /// No description provided for @youLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get youLabel;
+
+  /// No description provided for @opponent.
+  ///
+  /// In en, this message translates to:
+  /// **'Opponent'**
+  String get opponent;
+
+  /// No description provided for @connectionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection error. Check your internet and try again.'**
+  String get connectionError;
+
+  /// No description provided for @gameModes.
+  ///
+  /// In en, this message translates to:
+  /// **'GAME MODES'**
+  String get gameModes;
+
+  /// No description provided for @speedMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed'**
+  String get speedMode;
+
+  /// No description provided for @battleMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Battle'**
+  String get battleMode;
+
+  /// No description provided for @leaderboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaderboard'**
+  String get leaderboard;
+
+  /// No description provided for @achievements.
+  ///
+  /// In en, this message translates to:
+  /// **'Achievements'**
+  String get achievements;
+
+  /// No description provided for @online.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get online;
+
+  /// No description provided for @unlockAllFlags.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock All 250+ Flags'**
+  String get unlockAllFlags;
+
+  /// No description provided for @oneTimePurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'One-time purchase'**
+  String get oneTimePurchase;
 }
 
 class _AppLocalizationsDelegate
