@@ -60,7 +60,7 @@ class DefaultFirebaseOptions {
     // ⚠️  IMPORTANT: change this to match the Bundle ID you set in Xcode
     // (Runner → Signing & Capabilities → Bundle Identifier)
     // and what you registered in the Firebase Console iOS app.
-    iosBundleId: 'com.example.geoguessFlags',
+    iosBundleId: 'com.abdulaziz.geoguessflags',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
