@@ -35,29 +35,28 @@ class DefaultFirebaseOptions {
   // ── Replace all values below with your real Firebase config ──
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'YOUR_WEB_API_KEY',
-    appId: '1:000000000000:web:0000000000000000000000',
-    messagingSenderId: '000000000000',
-    projectId: 'your-project-id',
-    authDomain: 'your-project-id.firebaseapp.com',
-    storageBucket: 'your-project-id.appspot.com',
+    apiKey: 'AIzaSyCSyZPJ4kh9ucW1ArkiMW3HTnBsOwln4rY',
+    appId: '1:952231467952:web:9c881afb5625f25a3f1475',
+    messagingSenderId: '952231467952',
+    projectId: 'geo-guess-2001',
+    authDomain: 'geo-guess-2001.firebaseapp.com',
+    storageBucket: 'geo-guess-2001.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR_ANDROID_API_KEY',
-    appId: '1:000000000000:android:0000000000000000000000',
-    messagingSenderId: '000000000000',
-    projectId: 'your-project-id',
-    storageBucket: 'your-project-id.appspot.com',
+    apiKey: 'AIzaSyDp0gQQaV8msHWojA2Rb4dNnRARRYfbqw0',
+    appId: '1:952231467952:android:fac2fb34c83817b43f1475',
+    messagingSenderId: '952231467952',
+    projectId: 'geo-guess-2001',
+    storageBucket: 'geo-guess-2001.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'YOUR_IOS_API_KEY',
-    appId: '1:000000000000:ios:0000000000000000000000',
-    messagingSenderId: '000000000000',
-    projectId: 'your-project-id',
-    storageBucket: 'your-project-id.appspot.com',
-    iosClientId: 'YOUR_IOS_CLIENT_ID',
+    apiKey: 'AIzaSyCWGYiJDfWIomZHJ2iXntpo8pocAYZFVK8',
+    appId: '1:952231467952:ios:f60b4a508f827a8c3f1475',
+    messagingSenderId: '952231467952',
+    projectId: 'geo-guess-2001',
+    storageBucket: 'geo-guess-2001.firebasestorage.app',
     iosBundleId: 'com.example.geoguessFlags',
   );
 

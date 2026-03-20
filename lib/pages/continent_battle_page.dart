@@ -71,7 +71,6 @@ class _ContinentBattlePageState extends State<ContinentBattlePage> {
         builder: (_) => GamePage(
           countries: filtered,
           config: config,
-          continentName: info.region,
         ),
       ),
     );

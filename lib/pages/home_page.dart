@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
@@ -32,6 +34,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<Country> _allCountries = [];
   bool _isLoading = true;
+  bool _moreExpanded = false;
 
   @override
   void initState() {
@@ -53,53 +56,50 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _startReview(BuildContext context, MistakesProvider mistakesProv) {
+  void _startReview(BuildContext context, MistakesProvider mp) {
     final l10n = AppLocalizations.of(context)!;
-
-    final reviewList = _allCountries
-        .where((c) => mistakesProv.mistakenCca2s.contains(c.cca2))
-        .toList();
-
+    final reviewList =
+        _allCountries.where((c) => mp.mistakenCca2s.contains(c.cca2)).toList();
     if (reviewList.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.noMistakes),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l10n.noMistakes),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ));
       return;
     }
-
-    final config = GameConfig(
-      mode: GameMode.quiz,
-      questionCount: reviewList.length,
-      choicesCount: 4,
-      timerSeconds: null,
-      isReviewMode: true,
-    );
-
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => GamePage(countries: reviewList, config: config),
+        builder: (_) => GamePage(
+          countries: reviewList,
+          config: GameConfig(
+            mode: GameMode.quiz,
+            questionCount: reviewList.length,
+            choicesCount: 4,
+            isReviewMode: true,
+          ),
+        ),
       ),
     );
   }
 
   void _openLoginOrProfile(BuildContext context) {
     final auth = context.read<AuthService>();
-    if (auth.isSignedIn) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage()));
-    } else {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            auth.isSignedIn ? const ProfilePage() : const LoginPage(),
+      ),
+    );
   }
 
   void _requireAuth(BuildContext context, Widget Function() builder) {
     final auth = context.read<AuthService>();
     if (!auth.isSignedIn) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+      Navigator.push(
+          context, MaterialPageRoute(builder: (_) => const LoginPage()));
       return;
     }
     Navigator.push(context, MaterialPageRoute(builder: (_) => builder()));
@@ -109,763 +109,409 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final localeProv = Provider.of<LocaleProvider>(context);
-    final mistakesProv = Provider.of<MistakesProvider>(context);
+    final mp = Provider.of<MistakesProvider>(context);
     final ps = Provider.of<PurchaseService>(context);
     final auth = Provider.of<AuthService>(context);
 
     return Scaffold(
-      body: Column(
-        children: [
-          _HeroHeader(
-            isPremium: ps.isPremium,
-            isLoading: _isLoading,
-            isSignedIn: auth.isSignedIn,
-            displayName: auth.displayName,
-            onProfileTap: () => _openLoginOrProfile(context),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── Top bar ──────────────────────────────────────────
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              child: Row(
                 children: [
-                  // Action Cards Row (Play + Learn)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ActionCard(
-                          icon: Icons.play_circle_fill_rounded,
-                          label: l10n.play,
-                          subtitle: 'Quiz your flag skills',
-                          gradient: AppColors.gradientPrimary,
-                          delay: 100,
-                          onTap: _isLoading
-                              ? null
-                              : () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) => const PlaySetupPage()),
-                                  ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _ActionCard(
-                          icon: Icons.auto_stories_rounded,
-                          label: l10n.learn,
-                          subtitle: 'Explore all flags',
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF0891B2), Color(0xFF06B6D4)],
-                          ),
-                          delay: 200,
-                          onTap: _isLoading
-                              ? null
-                              : () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) => LearnPage(
-                                            countries: _allCountries)),
-                                  ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Online Modes Row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ActionCard(
-                          icon: Icons.wifi_rounded,
-                          label: 'Online Match',
-                          subtitle: 'Play vs a stranger',
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF059669), Color(0xFF10B981)],
-                          ),
-                          delay: 250,
-                          onTap: _isLoading
-                              ? null
-                              : () => _requireAuth(
-                                    context,
-                                    () => MultiplayerLobbyPage(
-                                        countries: _allCountries),
-                                  ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _ActionCard(
-                          icon: Icons.bolt_rounded,
-                          label: 'Speed Mode',
-                          subtitle: '60-second sprint',
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFDC2626), Color(0xFFEF4444)],
-                          ),
-                          delay: 300,
-                          onTap: _isLoading
-                              ? null
-                              : () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => SpeedModePage(
-                                          countries: _allCountries),
-                                    ),
-                                  ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Continent Battle (full width)
-                  _WideCard(
-                    icon: Icons.map_rounded,
-                    label: 'Continent Battle',
-                    subtitle: 'Conquer Africa, Europe, Asia & more',
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF7C3AED), Color(0xFF8B5CF6)],
+                  // App icon
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: AppColors.gradientPrimary,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    delay: 350,
-                    onTap: _isLoading
-                        ? null
-                        : () => Navigator.push(
+                    child: const Icon(Icons.public_rounded,
+                        color: Colors.white, size: 22),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'GeoGuess',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const Spacer(),
+                  // Language switcher
+                  DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: localeProv.locale.languageCode,
+                      borderRadius: BorderRadius.circular(12),
+                      icon: const Icon(Icons.language_rounded,
+                          size: 18, color: AppColors.primary),
+                      isDense: true,
+                      items: const [
+                        DropdownMenuItem(value: 'en', child: Text('EN')),
+                        DropdownMenuItem(value: 'ar', child: Text('ع')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) localeProv.setLocale(Locale(val));
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Profile avatar
+                  GestureDetector(
+                    onTap: () => _openLoginOrProfile(context),
+                    child: CircleAvatar(
+                      radius: 18,
+                      backgroundColor: AppColors.primary.withOpacity(0.1),
+                      child: auth.isSignedIn
+                          ? Text(
+                              (auth.displayName?.isNotEmpty == true
+                                      ? auth.displayName![0]
+                                      : '?')
+                                  .toUpperCase(),
+                              style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14),
+                            )
+                          : const Icon(Icons.person_outline_rounded,
+                              color: AppColors.primary, size: 18),
+                    ),
+                  ),
+                ],
+              ),
+            ).animate().fadeIn(duration: 300.ms),
+
+            // ── Scrollable body ───────────────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Hero text
+                    const SizedBox(height: 12),
+                    Text(
+                      '🚩',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 56),
+                    ).animate().scale(
+                          begin: const Offset(0.7, 0.7),
+                          duration: 400.ms,
+                          curve: Curves.elasticOut,
+                        ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _isLoading ? '...' : l10n.whatCountry,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.grey.shade500,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ).animate().fadeIn(delay: 100.ms),
+
+                    const SizedBox(height: 28),
+
+                    // ── Primary: Play button ──────────────────────
+                    _PlayButton(
+                      label: l10n.play,
+                      enabled: !_isLoading,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const PlaySetupPage()),
+                      ),
+                    ).animate().fadeIn(delay: 150.ms).slideY(
+                          begin: 0.15,
+                          end: 0,
+                          curve: Curves.easeOut,
+                          delay: 150.ms,
+                        ),
+
+                    const SizedBox(height: 10),
+
+                    // ── Secondary row: Learn + Review ─────────────
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _SecondaryButton(
+                            icon: Icons.auto_stories_rounded,
+                            label: l10n.learn,
+                            enabled: !_isLoading,
+                            onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => ContinentBattlePage(
-                                    countries: _allCountries),
-                              ),
+                                  builder: (_) =>
+                                      LearnPage(countries: _allCountries)),
                             ),
-                  ),
+                          ),
+                        ),
+                        if (mp.hasMistakes && !_isLoading) ...[
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _SecondaryButton(
+                              icon: Icons.refresh_rounded,
+                              label:
+                                  '${l10n.reviewMistakes} (${mp.mistakenCca2s.length})',
+                              enabled: true,
+                              color: AppColors.warning,
+                              onTap: () => _startReview(context, mp),
+                            ),
+                          ),
+                        ],
+                      ],
+                    )
+                        .animate()
+                        .fadeIn(delay: 220.ms)
+                        .slideY(begin: 0.15, end: 0, delay: 220.ms),
 
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 24),
 
-                  // Stats Row: Leaderboard + Achievements
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ActionCard(
+                    // ── Expandable: More Modes ────────────────────
+                    _MoreModesSection(
+                      expanded: _moreExpanded,
+                      enabled: !_isLoading,
+                      onToggle: () =>
+                          setState(() => _moreExpanded = !_moreExpanded),
+                      items: [
+                        _ModeItem(
+                          icon: Icons.bolt_rounded,
+                          label: 'Speed Mode',
+                          color: const Color(0xFFEF4444),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  SpeedModePage(countries: _allCountries),
+                            ),
+                          ),
+                        ),
+                        _ModeItem(
+                          icon: Icons.wifi_rounded,
+                          label: 'Online Match',
+                          color: const Color(0xFF10B981),
+                          onTap: () => _requireAuth(
+                            context,
+                            () => MultiplayerLobbyPage(
+                                countries: _allCountries),
+                          ),
+                        ),
+                        _ModeItem(
+                          icon: Icons.map_rounded,
+                          label: 'Continent Battle',
+                          color: AppColors.secondary,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ContinentBattlePage(
+                                  countries: _allCountries),
+                            ),
+                          ),
+                        ),
+                        _ModeItem(
                           icon: Icons.leaderboard_rounded,
                           label: 'Leaderboard',
-                          subtitle: 'Top players',
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFD97706), Color(0xFFF59E0B)],
-                          ),
-                          delay: 400,
+                          color: AppColors.gold,
                           onTap: () => _requireAuth(
                             context,
                             () => const LeaderboardPage(),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _ActionCard(
+                        _ModeItem(
                           icon: Icons.military_tech_rounded,
                           label: 'Achievements',
-                          subtitle: 'Unlock badges',
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF0F766E), Color(0xFF14B8A6)],
-                          ),
-                          delay: 450,
+                          color: const Color(0xFF14B8A6),
                           onTap: () => _requireAuth(
                             context,
                             () => const AchievementsPage(),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    )
+                        .animate()
+                        .fadeIn(delay: 290.ms)
+                        .slideY(begin: 0.1, end: 0, delay: 290.ms),
 
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 20),
 
-                  // Review Mistakes Card
-                  _ReviewCard(
-                    mistakesCount: mistakesProv.mistakenCca2s.length,
-                    hasMistakes: mistakesProv.hasMistakes && !_isLoading,
-                    label: l10n.reviewMistakes,
-                    delay: 500,
-                    onTap: () => _startReview(context, mistakesProv),
-                  ),
+                    // ── Premium banner ────────────────────────────
+                    if (!ps.isPremium)
+                      _PremiumBanner(
+                        onTap: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const PaywallPage()),
+                          );
+                        },
+                      )
+                          .animate()
+                          .fadeIn(delay: 350.ms)
+                          .slideY(begin: 0.1, end: 0, delay: 350.ms),
 
-                  const SizedBox(height: 12),
-
-                  // Premium Card
-                  if (!ps.isPremium)
-                    _PremiumBannerCard(
-                      delay: 550,
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const PaywallPage()),
-                        );
-                      },
-                    ),
-
-                  if (ps.isPremium) _PremiumActiveCard(delay: 550),
-
-                  const SizedBox(height: 20),
-
-                  // Language Card
-                  _SettingsCard(
-                    localeProv: localeProv,
-                    label: l10n.language,
-                    delay: 600,
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Hero Header ─────────────────────────────────────────────────────────────
-
-class _WideCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final Gradient gradient;
-  final int delay;
-  final VoidCallback? onTap;
-
-  const _WideCard({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.gradient,
-    required this.delay,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
           ],
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.white, size: 32),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold)),
-                  Text(subtitle,
-                      style: TextStyle(
-                          color: Colors.white.withOpacity(0.75), fontSize: 12)),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded,
-                color: Colors.white70, size: 16),
-          ],
-        ),
-      ),
-    )
-        .animate()
-        .fadeIn(delay: Duration(milliseconds: delay), duration: 400.ms)
-        .slideY(begin: 0.2, end: 0, curve: Curves.easeOut);
-  }
-}
-
-// ─── Hero Header ─────────────────────────────────────────────────────────────
-
-class _HeroHeader extends StatelessWidget {
-  final bool isPremium;
-  final bool isLoading;
-  final bool isSignedIn;
-  final String? displayName;
-  final VoidCallback onProfileTap;
-
-  const _HeroHeader({
-    required this.isPremium,
-    required this.isLoading,
-    required this.isSignedIn,
-    required this.displayName,
-    required this.onProfileTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: AppColors.gradientHero,
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(Icons.public_rounded,
-                        color: Colors.white, size: 28),
-                  ),
-                  Row(
-                    children: [
-                      if (isPremium)
-                        Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.workspace_premium,
-                                  color: Colors.white, size: 14),
-                              SizedBox(width: 4),
-                              Text(
-                                'PREMIUM',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      GestureDetector(
-                        onTap: onProfileTap,
-                        child: CircleAvatar(
-                          radius: 20,
-                          backgroundColor: Colors.white.withOpacity(0.2),
-                          child: isSignedIn
-                              ? Text(
-                                  (displayName?.isNotEmpty == true
-                                          ? displayName![0]
-                                          : '?')
-                                      .toUpperCase(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                )
-                              : const Icon(Icons.person_outline_rounded,
-                                  color: Colors.white, size: 20),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              )
-                  .animate()
-                  .fadeIn(duration: 400.ms)
-                  .slideY(begin: -0.2, end: 0),
-              const SizedBox(height: 20),
-              const Text(
-                'GeoGuess',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.white60,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 3,
-                ),
-              ).animate().fadeIn(delay: 100.ms),
-              const Text(
-                'Flags',
-                style: TextStyle(
-                  fontSize: 40,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  height: 1.0,
-                ),
-              ).animate().fadeIn(delay: 150.ms).slideX(begin: -0.1, end: 0),
-              const SizedBox(height: 8),
-              Text(
-                isLoading
-                    ? 'Loading countries...'
-                    : 'Test your world flags knowledge!',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white.withOpacity(0.75),
-                ),
-              ).animate().fadeIn(delay: 200.ms),
-            ],
-          ),
         ),
       ),
     );
   }
 }
 
-// ─── Action Card ─────────────────────────────────────────────────────────────
+// ─── Play Button ──────────────────────────────────────────────────────────────
 
-class _ActionCard extends StatelessWidget {
-  final IconData icon;
+class _PlayButton extends StatelessWidget {
   final String label;
-  final String subtitle;
-  final Gradient gradient;
-  final int delay;
-  final VoidCallback? onTap;
-
-  const _ActionCard({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.gradient,
-    required this.delay,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: onTap == null
-              ? const LinearGradient(colors: [Colors.grey, Colors.blueGrey])
-              : gradient,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.25),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: Colors.white, size: 32),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.75),
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-      ),
-    )
-        .animate()
-        .fadeIn(delay: Duration(milliseconds: delay), duration: 400.ms)
-        .slideY(begin: 0.2, end: 0, curve: Curves.easeOut);
-  }
-}
-
-// ─── Review Card ─────────────────────────────────────────────────────────────
-
-class _ReviewCard extends StatelessWidget {
-  final int mistakesCount;
-  final bool hasMistakes;
-  final String label;
-  final int delay;
+  final bool enabled;
   final VoidCallback onTap;
 
-  const _ReviewCard({
-    required this.mistakesCount,
-    required this.hasMistakes,
+  const _PlayButton({
     required this.label,
-    required this.delay,
+    required this.enabled,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: hasMistakes ? onTap : null,
-      child: Container(
-        padding: const EdgeInsets.all(20),
+      onTap: enabled ? onTap : null,
+      child: AnimatedContainer(
+        duration: 200.ms,
+        height: 62,
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: hasMistakes
-                ? AppColors.warning.withOpacity(0.4)
-                : Colors.grey.shade200,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          gradient: enabled
+              ? AppColors.gradientPrimary
+              : const LinearGradient(
+                  colors: [Color(0xFFD1D5DB), Color(0xFFD1D5DB)]),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: enabled
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: hasMistakes
-                    ? AppColors.warning.withOpacity(0.12)
-                    : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                Icons.refresh_rounded,
-                color: hasMistakes ? AppColors.warning : Colors.grey,
-                size: 26,
+            const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: hasMistakes
-                          ? Colors.black87
-                          : Colors.grey.shade400,
-                    ),
-                  ),
-                  Text(
-                    hasMistakes
-                        ? '$mistakesCount flag(s) to review'
-                        : 'No mistakes yet — great job!',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: hasMistakes
-                          ? AppColors.warning
-                          : Colors.grey.shade400,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (hasMistakes)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '$mistakesCount',
-                  style: const TextStyle(
-                    color: AppColors.warning,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
           ],
         ),
       ),
-    )
-        .animate()
-        .fadeIn(delay: Duration(milliseconds: delay), duration: 400.ms)
-        .slideY(begin: 0.2, end: 0);
+    );
   }
 }
 
-// ─── Premium Banner Card ──────────────────────────────────────────────────────
+// ─── Secondary Button ─────────────────────────────────────────────────────────
 
-class _PremiumBannerCard extends StatelessWidget {
-  final int delay;
+class _SecondaryButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool enabled;
+  final Color color;
   final VoidCallback onTap;
 
-  const _PremiumBannerCard({required this.delay, required this.onTap});
+  const _SecondaryButton({
+    required this.icon,
+    required this.label,
+    required this.enabled,
+    required this.onTap,
+    this.color = AppColors.primary,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final c = enabled ? color : Colors.grey.shade400;
     return GestureDetector(
-      onTap: onTap,
+      onTap: enabled ? onTap : null,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        height: 50,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1A1A2E), Color(0xFF0F3460)],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: c.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: c.withOpacity(0.3)),
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+            Icon(icon, color: c, size: 20),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: c,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.gold.withOpacity(0.4),
-                    blurRadius: 12,
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.workspace_premium,
-                  color: Colors.white, size: 28),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Unlock All 250+ Flags',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    'One-time purchase — play forever',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded,
-                color: Colors.amber, size: 16),
           ],
         ),
       ),
-    )
-        .animate()
-        .fadeIn(delay: Duration(milliseconds: delay), duration: 400.ms)
-        .slideY(begin: 0.2, end: 0);
+    );
   }
 }
 
-// ─── Premium Active Card ──────────────────────────────────────────────────────
+// ─── More Modes Section ───────────────────────────────────────────────────────
 
-class _PremiumActiveCard extends StatelessWidget {
-  final int delay;
-  const _PremiumActiveCard({required this.delay});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.workspace_premium, color: Colors.white, size: 28),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'You have Premium!',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  'All 250+ flags are unlocked 🌍',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          Icon(Icons.check_circle, color: Colors.white, size: 24),
-        ],
-      ),
-    )
-        .animate()
-        .fadeIn(delay: Duration(milliseconds: delay))
-        .slideY(begin: 0.2, end: 0);
-  }
-}
-
-// ─── Settings Card ────────────────────────────────────────────────────────────
-
-class _SettingsCard extends StatelessWidget {
-  final LocaleProvider localeProv;
+class _ModeItem {
+  final IconData icon;
   final String label;
-  final int delay;
+  final Color color;
+  final VoidCallback onTap;
+  const _ModeItem(
+      {required this.icon,
+      required this.label,
+      required this.color,
+      required this.onTap});
+}
 
-  const _SettingsCard({
-    required this.localeProv,
-    required this.label,
-    required this.delay,
+class _MoreModesSection extends StatelessWidget {
+  final bool expanded;
+  final bool enabled;
+  final VoidCallback onToggle;
+  final List<_ModeItem> items;
+
+  const _MoreModesSection({
+    required this.expanded,
+    required this.enabled,
+    required this.onToggle,
+    required this.items,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -874,36 +520,170 @@ class _SettingsCard extends StatelessWidget {
           ),
         ],
       ),
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header / toggle
+          InkWell(
+            onTap: enabled ? onToggle : null,
+            borderRadius: BorderRadius.circular(18),
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.grid_view_rounded,
+                        color: AppColors.primary, size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'More Modes',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: expanded ? 0.5 : 0,
+                    duration: 250.ms,
+                    child: const Icon(Icons.keyboard_arrow_down_rounded,
+                        color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
           ),
-          child: const Icon(Icons.language_rounded,
-              color: AppColors.primary, size: 22),
-        ),
-        title: Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-        ),
-        trailing: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: localeProv.locale.languageCode,
-            borderRadius: BorderRadius.circular(12),
-            items: const [
-              DropdownMenuItem(value: 'en', child: Text('English')),
-              DropdownMenuItem(value: 'ar', child: Text('العربية')),
-            ],
-            onChanged: (val) {
-              if (val != null) localeProv.setLocale(Locale(val));
-            },
+
+          // Expandable list
+          AnimatedSize(
+            duration: 280.ms,
+            curve: Curves.easeInOut,
+            child: expanded
+                ? Column(
+                    children: [
+                      Divider(
+                          height: 1, color: Colors.grey.shade100, indent: 18, endIndent: 18),
+                      ...items.asMap().entries.map((e) {
+                        final i = e.key;
+                        final item = e.value;
+                        return _ModeRow(item: item)
+                            .animate()
+                            .fadeIn(
+                              delay: Duration(milliseconds: 40 * i),
+                              duration: 200.ms,
+                            )
+                            .slideX(
+                              begin: -0.05,
+                              end: 0,
+                              delay: Duration(milliseconds: 40 * i),
+                            );
+                      }),
+                      const SizedBox(height: 6),
+                    ],
+                  )
+                : const SizedBox.shrink(),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModeRow extends StatelessWidget {
+  final _ModeItem item;
+  const _ModeRow({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: item.onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: item.color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(item.icon, color: item.color, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Text(
+              item.label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const Spacer(),
+            Icon(Icons.arrow_forward_ios_rounded,
+                size: 13, color: Colors.grey.shade400),
+          ],
         ),
       ),
-    ).animate().fadeIn(delay: Duration(milliseconds: delay), duration: 400.ms);
+    );
+  }
+}
+
+// ─── Premium Banner ───────────────────────────────────────────────────────────
+
+class _PremiumBanner extends StatelessWidget {
+  final VoidCallback onTap;
+  const _PremiumBanner({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A2E),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.workspace_premium,
+                color: AppColors.gold, size: 28),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Unlock All 250+ Flags',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'One-time purchase',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded,
+                color: AppColors.gold, size: 14),
+          ],
+        ),
+      ),
+    );
   }
 }
