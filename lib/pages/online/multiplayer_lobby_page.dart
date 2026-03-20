@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/country.dart';
 import '../../services/auth_service.dart';
 import '../../services/multiplayer_service.dart';
@@ -39,7 +40,6 @@ class _MultiplayerLobbyPageState extends State<MultiplayerLobbyPage>
   void dispose() {
     _pulseCtrl.dispose();
     _roomSub?.cancel();
-    // Clean up if still waiting
     if (_state == _LobbyState.waiting && _roomId != null && _isPlayer1) {
       _service.deleteRoom(_roomId!);
     }
@@ -48,6 +48,7 @@ class _MultiplayerLobbyPageState extends State<MultiplayerLobbyPage>
 
   Future<void> _findMatch() async {
     final auth = context.read<AuthService>();
+    final l10n = AppLocalizations.of(context)!;
     final uid = auth.uid!;
     final username = auth.displayName ?? 'Player';
     final cca2s = widget.countries.map((c) => c.cca2).toList();
@@ -55,7 +56,6 @@ class _MultiplayerLobbyPageState extends State<MultiplayerLobbyPage>
     setState(() { _state = _LobbyState.searching; _error = null; });
 
     try {
-      // First try to join an existing room
       final joined = await _service.findAndJoinRoom(uid: uid, username: username);
 
       if (joined != null) {
@@ -63,7 +63,6 @@ class _MultiplayerLobbyPageState extends State<MultiplayerLobbyPage>
         _isPlayer1 = false;
         _listenToRoom(joined);
       } else {
-        // Create a new room and wait
         final created = await _service.createRoom(uid: uid, username: username, allCca2s: cca2s);
         _roomId = created;
         _isPlayer1 = true;
@@ -71,7 +70,7 @@ class _MultiplayerLobbyPageState extends State<MultiplayerLobbyPage>
         _listenToRoom(created);
       }
     } catch (e) {
-      if (mounted) setState(() { _state = _LobbyState.idle; _error = 'Connection error. Check your internet and try again.'; });
+      if (mounted) setState(() { _state = _LobbyState.idle; _error = l10n.connectionError; });
     }
   }
 
@@ -117,7 +116,6 @@ class _MultiplayerLobbyPageState extends State<MultiplayerLobbyPage>
         child: SafeArea(
           child: Column(
             children: [
-              // Back
               Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
@@ -125,13 +123,10 @@ class _MultiplayerLobbyPageState extends State<MultiplayerLobbyPage>
                   onPressed: _state == _LobbyState.waiting ? _cancel : () => Navigator.pop(context),
                 ),
               ),
-
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildContent(),
-                  ],
+                  children: [_buildContent()],
                 ),
               ),
             ],
@@ -150,21 +145,22 @@ class _MultiplayerLobbyPageState extends State<MultiplayerLobbyPage>
   }
 
   Widget _buildIdle() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         const Icon(Icons.people_rounded, size: 80, color: Colors.white)
             .animate().scale(duration: 600.ms, curve: Curves.elasticOut),
         const SizedBox(height: 20),
-        const Text('Online Match', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white)),
+        Text(l10n.onlineMatch, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white)),
         const SizedBox(height: 8),
-        Text('Play 20 flags vs a random player\n10 choices per question',
+        Text(l10n.onlineMatchDesc,
             style: TextStyle(color: Colors.white.withOpacity(0.65), fontSize: 15), textAlign: TextAlign.center),
         const SizedBox(height: 10),
-        _RuleChip('🏳 20 questions'),
+        _RuleChip('🏳 20 ${l10n.question}s'),
         const SizedBox(height: 6),
-        _RuleChip('🔟 10 choices'),
+        _RuleChip('🔟 10 ${l10n.choicesCount.split(' ').last}'),
         const SizedBox(height: 6),
-        _RuleChip('⏱ No timer — race your brain!'),
+        _RuleChip('⏱ ${l10n.off} ${l10n.timer}'),
         const SizedBox(height: 48),
         if (_error != null)
           Padding(
@@ -184,12 +180,12 @@ class _MultiplayerLobbyPageState extends State<MultiplayerLobbyPage>
               borderRadius: BorderRadius.circular(20),
               boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.5), blurRadius: 20, offset: const Offset(0, 8))],
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.search_rounded, color: Colors.white, size: 24),
-                SizedBox(width: 10),
-                Text('Find Match', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                const Icon(Icons.search_rounded, color: Colors.white, size: 24),
+                const SizedBox(width: 10),
+                Text(l10n.findMatch, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -199,6 +195,7 @@ class _MultiplayerLobbyPageState extends State<MultiplayerLobbyPage>
   }
 
   Widget _buildSearching() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         const SizedBox(
@@ -206,14 +203,15 @@ class _MultiplayerLobbyPageState extends State<MultiplayerLobbyPage>
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
         ),
         const SizedBox(height: 20),
-        const Text('Searching for opponent...', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(l10n.searchingOpponent, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        Text('Finding the best match for you', style: TextStyle(color: Colors.white.withOpacity(0.6))),
+        Text(l10n.findingBestMatch, style: TextStyle(color: Colors.white.withOpacity(0.6))),
       ],
     );
   }
 
   Widget _buildWaiting() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         AnimatedBuilder(
@@ -229,14 +227,14 @@ class _MultiplayerLobbyPageState extends State<MultiplayerLobbyPage>
           ),
         ),
         const SizedBox(height: 24),
-        const Text('Waiting for a player...', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+        Text(l10n.waitingForPlayer, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        Text('Room created! Hang tight.', style: TextStyle(color: Colors.white.withOpacity(0.6))),
+        Text(l10n.roomCreated, style: TextStyle(color: Colors.white.withOpacity(0.6))),
         const SizedBox(height: 40),
         TextButton.icon(
           onPressed: _cancel,
           icon: const Icon(Icons.close, color: Colors.white60),
-          label: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+          label: Text(l10n.cancel, style: const TextStyle(color: Colors.white60)),
         ),
       ],
     );

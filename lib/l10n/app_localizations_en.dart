@@ -178,4 +178,71 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get typeMode => 'Typing Mode (No Choices)';
+
+  // ── Multiplayer / Online ───────────────────────────────────────────────────
+
+  @override
+  String get onlineMatch => 'Online Match';
+
+  @override
+  String get onlineMatchDesc => 'Play 20 flags vs a random player\n10 choices per question';
+
+  @override
+  String get findMatch => 'Find Match';
+
+  @override
+  String get searchingOpponent => 'Searching for opponent...';
+
+  @override
+  String get findingBestMatch => 'Finding the best match for you';
+
+  @override
+  String get waitingForPlayer => 'Waiting for a player...';
+
+  @override
+  String get roomCreated => 'Room created! Hang tight.';
+
+  @override
+  String get youWon => '🏆 You Won!';
+
+  @override
+  String get youLost => '😔 You Lost';
+
+  @override
+  String get waitingForOpponentFinish => 'Waiting for opponent to finish...';
+
+  @override
+  String get youLabel => 'You';
+
+  @override
+  String get opponent => 'Opponent';
+
+  @override
+  String get connectionError => 'Connection error. Check your internet and try again.';
+
+  // ── Home page labels ───────────────────────────────────────────────────────
+
+  @override
+  String get gameModes => 'GAME MODES';
+
+  @override
+  String get speedMode => 'Speed';
+
+  @override
+  String get battleMode => 'Battle';
+
+  @override
+  String get leaderboard => 'Leaderboard';
+
+  @override
+  String get achievements => 'Achievements';
+
+  @override
+  String get online => 'Online';
+
+  @override
+  String get unlockAllFlags => 'Unlock All 250+ Flags';
+
+  @override
+  String get oneTimePurchase => 'One-time purchase';
 }

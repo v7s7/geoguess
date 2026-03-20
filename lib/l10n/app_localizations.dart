@@ -439,6 +439,33 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Typing Mode (No Choices)'**
   String get typeMode;
+
+  // ── Multiplayer / Online ───────────────────────────────────────────────────
+
+  String get onlineMatch;
+  String get onlineMatchDesc;
+  String get findMatch;
+  String get searchingOpponent;
+  String get findingBestMatch;
+  String get waitingForPlayer;
+  String get roomCreated;
+  String get youWon;
+  String get youLost;
+  String get waitingForOpponentFinish;
+  String get youLabel;
+  String get opponent;
+  String get connectionError;
+
+  // ── Home page labels ───────────────────────────────────────────────────────
+
+  String get gameModes;
+  String get speedMode;
+  String get battleMode;
+  String get leaderboard;
+  String get achievements;
+  String get online;
+  String get unlockAllFlags;
+  String get oneTimePurchase;
 }
 
 class _AppLocalizationsDelegate
