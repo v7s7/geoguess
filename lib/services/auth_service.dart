@@ -35,12 +35,20 @@ class AuthService extends ChangeNotifier {
         email: email.trim(),
         password: password,
       );
-      await cred.user?.updateDisplayName(username.trim());
-      await UserService().createProfile(
-        uid: cred.user!.uid,
-        username: username.trim(),
-        email: email.trim(),
-      );
+      // Auth succeeded — update display name + Firestore profile.
+      // Profile creation errors must NOT fail the sign-up (user already exists in Auth).
+      try {
+        await cred.user?.updateDisplayName(username.trim());
+        await UserService().createProfile(
+          uid: cred.user!.uid,
+          username: username.trim(),
+          email: email.trim(),
+        );
+      } catch (_) {
+        // Profile creation failed (e.g. Firestore permission). Auth account was
+        // still created — return success so the user is not stuck in a loop where
+        // every retry says "email already in use".
+      }
       notifyListeners();
       return null; // null = success
     } on FirebaseAuthException catch (e) {
@@ -77,7 +85,7 @@ class AuthService extends ChangeNotifier {
   String _authError(String code) {
     switch (code) {
       case 'email-already-in-use':
-        return 'This email is already registered.';
+        return 'This email is already registered. Please sign in instead.';
       case 'invalid-email':
         return 'Please enter a valid email address.';
       case 'weak-password':

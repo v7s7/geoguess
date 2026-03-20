@@ -34,7 +34,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<Country> _allCountries = [];
   bool _isLoading = true;
-  bool _moreExpanded = false;
 
   @override
   void initState() {
@@ -51,16 +50,15 @@ class _HomePageState extends State<HomePage> {
           _isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _startReview(BuildContext context, MistakesProvider mp) {
     final l10n = AppLocalizations.of(context)!;
-    final reviewList =
-        _allCountries.where((c) => mp.mistakenCca2s.contains(c.cca2)).toList();
-    if (reviewList.isEmpty) {
+    final list = _allCountries.where((c) => mp.mistakenCca2s.contains(c.cca2)).toList();
+    if (list.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(l10n.noMistakes),
         behavior: SnackBarBehavior.floating,
@@ -72,10 +70,10 @@ class _HomePageState extends State<HomePage> {
       context,
       MaterialPageRoute(
         builder: (_) => GamePage(
-          countries: reviewList,
+          countries: list,
           config: GameConfig(
             mode: GameMode.quiz,
-            questionCount: reviewList.length,
+            questionCount: list.length,
             choicesCount: 4,
             isReviewMode: true,
           ),
@@ -84,25 +82,21 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _openLoginOrProfile(BuildContext context) {
-    final auth = context.read<AuthService>();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) =>
-            auth.isSignedIn ? const ProfilePage() : const LoginPage(),
-      ),
-    );
-  }
-
   void _requireAuth(BuildContext context, Widget Function() builder) {
     final auth = context.read<AuthService>();
     if (!auth.isSignedIn) {
-      Navigator.push(
-          context, MaterialPageRoute(builder: (_) => const LoginPage()));
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
       return;
     }
     Navigator.push(context, MaterialPageRoute(builder: (_) => builder()));
+  }
+
+  void _openProfile(BuildContext context) {
+    final auth = context.read<AuthService>();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => auth.isSignedIn ? const ProfilePage() : const LoginPage()),
+    );
   }
 
   @override
@@ -114,273 +108,274 @@ class _HomePageState extends State<HomePage> {
     final auth = Provider.of<AuthService>(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── Top bar ──────────────────────────────────────────
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              child: Row(
-                children: [
-                  // App icon
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      gradient: AppColors.gradientPrimary,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.public_rounded,
-                        color: Colors.white, size: 22),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'GeoGuess',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const Spacer(),
-                  // Language switcher
-                  DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: localeProv.locale.languageCode,
-                      borderRadius: BorderRadius.circular(12),
-                      icon: const Icon(Icons.language_rounded,
-                          size: 18, color: AppColors.primary),
-                      isDense: true,
-                      items: const [
-                        DropdownMenuItem(value: 'en', child: Text('EN')),
-                        DropdownMenuItem(value: 'ar', child: Text('ع')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) localeProv.setLocale(Locale(val));
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Profile avatar
-                  GestureDetector(
-                    onTap: () => _openLoginOrProfile(context),
-                    child: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
-                      child: auth.isSignedIn
-                          ? Text(
-                              (auth.displayName?.isNotEmpty == true
-                                      ? auth.displayName![0]
-                                      : '?')
-                                  .toUpperCase(),
-                              style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14),
-                            )
-                          : const Icon(Icons.person_outline_rounded,
-                              color: AppColors.primary, size: 18),
-                    ),
-                  ),
-                ],
+      backgroundColor: AppColors.background,
+      body: CustomScrollView(
+        slivers: [
+          // ── Gradient hero header ──────────────────────────────
+          SliverToBoxAdapter(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: AppColors.gradientHero,
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
               ),
-            ).animate().fadeIn(duration: 300.ms),
-
-            // ── Scrollable body ───────────────────────────────────
-            Expanded(
-              child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Hero text
-                    const SizedBox(height: 12),
-                    Text(
-                      '🚩',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 56),
-                    ).animate().scale(
-                          begin: const Offset(0.7, 0.7),
-                          duration: 400.ms,
-                          curve: Curves.elasticOut,
-                        ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _isLoading ? '...' : l10n.whatCountry,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.grey.shade500,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ).animate().fadeIn(delay: 100.ms),
-
-                    const SizedBox(height: 28),
-
-                    // ── Primary: Play button ──────────────────────
-                    _PlayButton(
-                      label: l10n.play,
-                      enabled: !_isLoading,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const PlaySetupPage()),
-                      ),
-                    ).animate().fadeIn(delay: 150.ms).slideY(
-                          begin: 0.15,
-                          end: 0,
-                          curve: Curves.easeOut,
-                          delay: 150.ms,
-                        ),
-
-                    const SizedBox(height: 10),
-
-                    // ── Secondary row: Learn + Review ─────────────
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _SecondaryButton(
-                            icon: Icons.auto_stories_rounded,
-                            label: l10n.learn,
-                            enabled: !_isLoading,
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      LearnPage(countries: _allCountries)),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                  child: Column(
+                    children: [
+                      // Top bar
+                      Row(
+                        children: [
+                          const Icon(Icons.public_rounded, color: Colors.white, size: 24),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'GeoGuess',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.3,
                             ),
                           ),
-                        ),
-                        if (mp.hasMistakes && !_isLoading) ...[
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _SecondaryButton(
-                              icon: Icons.refresh_rounded,
-                              label:
-                                  '${l10n.reviewMistakes} (${mp.mistakenCca2s.length})',
-                              enabled: true,
-                              color: AppColors.warning,
-                              onTap: () => _startReview(context, mp),
+                          const Spacer(),
+                          // Language switcher
+                          DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: localeProv.locale.languageCode,
+                              dropdownColor: const Color(0xFF312E81),
+                              borderRadius: BorderRadius.circular(12),
+                              icon: const SizedBox.shrink(),
+                              isDense: true,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              items: const [
+                                DropdownMenuItem(value: 'en', child: Text('EN')),
+                                DropdownMenuItem(value: 'ar', child: Text('ع')),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) localeProv.setLocale(Locale(val));
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => _openProfile(context),
+                            child: CircleAvatar(
+                              radius: 18,
+                              backgroundColor: Colors.white.withOpacity(0.15),
+                              child: auth.isSignedIn
+                                  ? Text(
+                                      (auth.displayName?.isNotEmpty == true
+                                              ? auth.displayName![0]
+                                              : '?')
+                                          .toUpperCase(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    )
+                                  : const Icon(Icons.person_outline_rounded,
+                                      color: Colors.white70, size: 18),
                             ),
                           ),
                         ],
-                      ],
-                    )
-                        .animate()
-                        .fadeIn(delay: 220.ms)
-                        .slideY(begin: 0.15, end: 0, delay: 220.ms),
+                      ).animate().fadeIn(duration: 300.ms),
 
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 28),
 
-                    // ── Expandable: More Modes ────────────────────
-                    _MoreModesSection(
-                      expanded: _moreExpanded,
-                      enabled: !_isLoading,
-                      onToggle: () =>
-                          setState(() => _moreExpanded = !_moreExpanded),
-                      items: [
-                        _ModeItem(
-                          icon: Icons.bolt_rounded,
-                          label: 'Speed Mode',
-                          color: const Color(0xFFEF4444),
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  SpeedModePage(countries: _allCountries),
-                            ),
-                          ),
-                        ),
-                        _ModeItem(
-                          icon: Icons.wifi_rounded,
-                          label: 'Online Match',
-                          color: const Color(0xFF10B981),
-                          onTap: () => _requireAuth(
-                            context,
-                            () => MultiplayerLobbyPage(
-                                countries: _allCountries),
-                          ),
-                        ),
-                        _ModeItem(
-                          icon: Icons.map_rounded,
-                          label: 'Continent Battle',
-                          color: AppColors.secondary,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ContinentBattlePage(
-                                  countries: _allCountries),
-                            ),
-                          ),
-                        ),
-                        _ModeItem(
-                          icon: Icons.leaderboard_rounded,
-                          label: 'Leaderboard',
-                          color: AppColors.gold,
-                          onTap: () => _requireAuth(
-                            context,
-                            () => const LeaderboardPage(),
-                          ),
-                        ),
-                        _ModeItem(
-                          icon: Icons.military_tech_rounded,
-                          label: 'Achievements',
-                          color: const Color(0xFF14B8A6),
-                          onTap: () => _requireAuth(
-                            context,
-                            () => const AchievementsPage(),
-                          ),
-                        ),
-                      ],
-                    )
-                        .animate()
-                        .fadeIn(delay: 290.ms)
-                        .slideY(begin: 0.1, end: 0, delay: 290.ms),
-
-                    const SizedBox(height: 20),
-
-                    // ── Premium banner ────────────────────────────
-                    if (!ps.isPremium)
-                      _PremiumBanner(
-                        onTap: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const PaywallPage()),
-                          );
-                        },
-                      )
+                      // Hero flag + title
+                      const Text('🚩', style: TextStyle(fontSize: 64))
                           .animate()
-                          .fadeIn(delay: 350.ms)
-                          .slideY(begin: 0.1, end: 0, delay: 350.ms),
+                          .scale(begin: const Offset(0.5, 0.5), duration: 500.ms, curve: Curves.elasticOut),
 
-                    const SizedBox(height: 24),
-                  ],
+                      const SizedBox(height: 12),
+                      Text(
+                        _isLoading ? '...' : l10n.whatCountry,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.75),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ).animate().fadeIn(delay: 150.ms),
+
+                      const SizedBox(height: 6),
+                      Text(
+                        '${_allCountries.isEmpty ? '...' : _allCountries.length}+ flags',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.45),
+                          fontSize: 12,
+                        ),
+                      ).animate().fadeIn(delay: 200.ms),
+
+                      const SizedBox(height: 28),
+
+                      // ── Big PLAY button ──────────────────────
+                      _BigPlayButton(
+                        label: l10n.play,
+                        enabled: !_isLoading,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const PlaySetupPage()),
+                        ),
+                      ).animate().fadeIn(delay: 250.ms).slideY(begin: 0.2, end: 0, delay: 250.ms),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+
+          // ── Mode cards ───────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Game Modes',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black54,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _ModeCard(
+                        icon: Icons.bolt_rounded,
+                        label: 'Speed',
+                        color: const Color(0xFFEF4444),
+                        enabled: !_isLoading,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SpeedModePage(countries: _allCountries),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      _ModeCard(
+                        icon: Icons.map_rounded,
+                        label: 'Battle',
+                        color: AppColors.secondary,
+                        enabled: !_isLoading,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ContinentBattlePage(countries: _allCountries),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      _ModeCard(
+                        icon: Icons.auto_stories_rounded,
+                        label: l10n.learn,
+                        color: AppColors.accent,
+                        enabled: !_isLoading,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LearnPage(countries: _allCountries),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1, end: 0, delay: 300.ms),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Review mistakes (if any) ─────────────────────────
+          if (mp.hasMistakes && !_isLoading)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: _ReviewBanner(
+                  count: mp.mistakenCca2s.length,
+                  onTap: () => _startReview(context, mp),
+                ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.1, end: 0, delay: 350.ms),
+              ),
+            ),
+
+          // ── Social row (auth-gated) ─────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _SocialButton(
+                      icon: Icons.leaderboard_rounded,
+                      label: 'Leaderboard',
+                      color: AppColors.gold,
+                      onTap: () => _requireAuth(context, () => const LeaderboardPage()),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _SocialButton(
+                      icon: Icons.military_tech_rounded,
+                      label: 'Achievements',
+                      color: const Color(0xFF14B8A6),
+                      onTap: () => _requireAuth(context, () => const AchievementsPage()),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _SocialButton(
+                      icon: Icons.wifi_rounded,
+                      label: 'Online',
+                      color: const Color(0xFF10B981),
+                      onTap: () => _requireAuth(
+                        context,
+                        () => MultiplayerLobbyPage(countries: _allCountries),
+                      ),
+                    ),
+                  ),
+                ],
+              ).animate().fadeIn(delay: 380.ms).slideY(begin: 0.1, end: 0, delay: 380.ms),
+            ),
+          ),
+
+          // ── Premium banner ──────────────────────────────────
+          if (!ps.isPremium)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: _PremiumBanner(
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PaywallPage()),
+                    );
+                  },
+                ).animate().fadeIn(delay: 420.ms).slideY(begin: 0.1, end: 0, delay: 420.ms),
+              ),
+            ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+        ],
       ),
     );
   }
 }
 
-// ─── Play Button ──────────────────────────────────────────────────────────────
+// ─── Big Play Button ──────────────────────────────────────────────────────────
 
-class _PlayButton extends StatelessWidget {
+class _BigPlayButton extends StatelessWidget {
   final String label;
   final bool enabled;
   final VoidCallback onTap;
-
-  const _PlayButton({
-    required this.label,
-    required this.enabled,
-    required this.onTap,
-  });
+  const _BigPlayButton({required this.label, required this.enabled, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -388,19 +383,16 @@ class _PlayButton extends StatelessWidget {
       onTap: enabled ? onTap : null,
       child: AnimatedContainer(
         duration: 200.ms,
-        height: 62,
+        height: 64,
         decoration: BoxDecoration(
-          gradient: enabled
-              ? AppColors.gradientPrimary
-              : const LinearGradient(
-                  colors: [Color(0xFFD1D5DB), Color(0xFFD1D5DB)]),
-          borderRadius: BorderRadius.circular(18),
+          color: enabled ? Colors.white : Colors.white38,
+          borderRadius: BorderRadius.circular(20),
           boxShadow: enabled
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
                 ]
               : null,
@@ -408,14 +400,18 @@ class _PlayButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
-            const SizedBox(width: 10),
+            Icon(
+              Icons.play_arrow_rounded,
+              color: enabled ? AppColors.primary : Colors.white54,
+              size: 30,
+            ),
+            const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+              style: TextStyle(
+                color: enabled ? AppColors.primary : Colors.white54,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
                 letterSpacing: 0.5,
               ),
             ),
@@ -426,48 +422,114 @@ class _PlayButton extends StatelessWidget {
   }
 }
 
-// ─── Secondary Button ─────────────────────────────────────────────────────────
+// ─── Mode Card ────────────────────────────────────────────────────────────────
 
-class _SecondaryButton extends StatelessWidget {
+class _ModeCard extends StatelessWidget {
   final IconData icon;
   final String label;
-  final bool enabled;
   final Color color;
+  final bool enabled;
   final VoidCallback onTap;
-
-  const _SecondaryButton({
+  const _ModeCard({
     required this.icon,
     required this.label,
+    required this.color,
     required this.enabled,
     required this.onTap,
-    this.color = AppColors.primary,
   });
 
   @override
   Widget build(BuildContext context) {
-    final c = enabled ? color : Colors.grey.shade400;
+    return Expanded(
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        child: Container(
+          height: 82,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.12),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: enabled ? Colors.black87 : Colors.grey,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Social Button ────────────────────────────────────────────────────────────
+
+class _SocialButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _SocialButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: enabled ? onTap : null,
+      onTap: onTap,
       child: Container(
-        height: 50,
+        height: 52,
         decoration: BoxDecoration(
-          color: c.withOpacity(0.08),
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: c.withOpacity(0.3)),
+          border: Border.all(color: Colors.grey.shade100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: c, size: 20),
-            const SizedBox(width: 6),
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 5),
             Flexible(
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: c,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
                 ),
               ),
             ),
@@ -478,160 +540,40 @@ class _SecondaryButton extends StatelessWidget {
   }
 }
 
-// ─── More Modes Section ───────────────────────────────────────────────────────
+// ─── Review Banner ────────────────────────────────────────────────────────────
 
-class _ModeItem {
-  final IconData icon;
-  final String label;
-  final Color color;
+class _ReviewBanner extends StatelessWidget {
+  final int count;
   final VoidCallback onTap;
-  const _ModeItem(
-      {required this.icon,
-      required this.label,
-      required this.color,
-      required this.onTap});
-}
-
-class _MoreModesSection extends StatelessWidget {
-  final bool expanded;
-  final bool enabled;
-  final VoidCallback onToggle;
-  final List<_ModeItem> items;
-
-  const _MoreModesSection({
-    required this.expanded,
-    required this.enabled,
-    required this.onToggle,
-    required this.items,
-  });
+  const _ReviewBanner({required this.count, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header / toggle
-          InkWell(
-            onTap: enabled ? onToggle : null,
-            borderRadius: BorderRadius.circular(18),
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              child: Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.grid_view_rounded,
-                        color: AppColors.primary, size: 18),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'More Modes',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                  AnimatedRotation(
-                    turns: expanded ? 0.5 : 0,
-                    duration: 250.ms,
-                    child: const Icon(Icons.keyboard_arrow_down_rounded,
-                        color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Expandable list
-          AnimatedSize(
-            duration: 280.ms,
-            curve: Curves.easeInOut,
-            child: expanded
-                ? Column(
-                    children: [
-                      Divider(
-                          height: 1, color: Colors.grey.shade100, indent: 18, endIndent: 18),
-                      ...items.asMap().entries.map((e) {
-                        final i = e.key;
-                        final item = e.value;
-                        return _ModeRow(item: item)
-                            .animate()
-                            .fadeIn(
-                              delay: Duration(milliseconds: 40 * i),
-                              duration: 200.ms,
-                            )
-                            .slideX(
-                              begin: -0.05,
-                              end: 0,
-                              delay: Duration(milliseconds: 40 * i),
-                            );
-                      }),
-                      const SizedBox(height: 6),
-                    ],
-                  )
-                : const SizedBox.shrink(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ModeRow extends StatelessWidget {
-  final _ModeItem item;
-  const _ModeRow({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: item.onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.warning.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+        ),
         child: Row(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: item.color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(item.icon, color: item.color, size: 20),
-            ),
-            const SizedBox(width: 14),
-            Text(
-              item.label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
+            const Icon(Icons.refresh_rounded, color: AppColors.warning, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Review $count mistake${count > 1 ? 's' : ''}',
+                style: const TextStyle(
+                  color: AppColors.warning,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
               ),
             ),
-            const Spacer(),
-            Icon(Icons.arrow_forward_ios_rounded,
-                size: 13, color: Colors.grey.shade400),
+            const Icon(Icons.arrow_forward_ios_rounded,
+                color: AppColors.warning, size: 13),
           ],
         ),
       ),
@@ -657,8 +599,7 @@ class _PremiumBanner extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.workspace_premium,
-                color: AppColors.gold, size: 28),
+            const Icon(Icons.workspace_premium, color: AppColors.gold, size: 26),
             const SizedBox(width: 12),
             const Expanded(
               child: Column(
@@ -668,19 +609,19 @@ class _PremiumBanner extends StatelessWidget {
                     'Unlock All 250+ Flags',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
                     'One-time purchase',
-                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                    style: TextStyle(color: Colors.white38, fontSize: 11),
                   ),
                 ],
               ),
             ),
             const Icon(Icons.arrow_forward_ios_rounded,
-                color: AppColors.gold, size: 14),
+                color: AppColors.gold, size: 13),
           ],
         ),
       ),

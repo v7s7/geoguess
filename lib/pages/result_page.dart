@@ -7,37 +7,39 @@ class ResultPage extends StatelessWidget {
   final int score;
   final int playedQuestions;
   final int totalQuestions;
+  final int correctAnswers;
+  final int maxStreak;
 
   const ResultPage({
     super.key,
     required this.score,
-    required this.playedQuestions,
     required this.totalQuestions,
+    required this.playedQuestions,
+    this.correctAnswers = 0,
+    this.maxStreak = 0,
   });
 
-  double get _percentage {
-    final maxScore = playedQuestions * 100;
-    return maxScore > 0 ? (score / maxScore).clamp(0.0, 1.0) : 0.0;
-  }
+  double get _accuracy =>
+      playedQuestions > 0 ? correctAnswers / playedQuestions : 0.0;
 
   int get _stars {
-    if (_percentage >= 0.9) return 3;
-    if (_percentage >= 0.6) return 2;
-    if (_percentage >= 0.3) return 1;
+    if (_accuracy >= 0.9) return 3;
+    if (_accuracy >= 0.6) return 2;
+    if (_accuracy >= 0.3) return 1;
     return 0;
   }
 
-  String _getMessage(AppLocalizations l10n) {
-    if (_percentage >= 0.9) return 'Outstanding! 🏆';
-    if (_percentage >= 0.6) return 'Great job! 🎉';
-    if (_percentage >= 0.3) return 'Good effort! 💪';
+  String _getMessage() {
+    if (_accuracy >= 0.9) return 'Outstanding! 🏆';
+    if (_accuracy >= 0.6) return 'Great job! 🎉';
+    if (_accuracy >= 0.3) return 'Good effort! 💪';
     return 'Keep practicing! 📚';
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final pct = (_percentage * 100).toInt();
+    final pct = (_accuracy * 100).toInt();
 
     return Scaffold(
       body: Container(
@@ -45,16 +47,16 @@ class ResultPage extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF312E81), Color(0xFFF0F4FF)],
-            stops: [0.0, 0.45],
+            colors: [Color(0xFF1E1B4B), Color(0xFF312E81), Color(0xFFF0F4FF)],
+            stops: [0.0, 0.3, 0.55],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              // ─── Top / Trophy section ──────────────────────
+              // ── Trophy area ──────────────────────────────
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
                 child: Column(
                   children: [
                     // Stars
@@ -63,41 +65,41 @@ class ResultPage extends StatelessWidget {
                       children: List.generate(3, (i) {
                         final filled = i < _stars;
                         return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 5),
                           child: Icon(
                             filled ? Icons.star_rounded : Icons.star_outline_rounded,
-                            color: filled ? Colors.amber : Colors.white38,
-                            size: 36,
+                            color: filled ? Colors.amber : Colors.white24,
+                            size: 40,
                           )
                               .animate()
                               .scale(
-                                  delay: Duration(milliseconds: 200 + i * 150),
-                                  duration: 400.ms,
-                                  curve: Curves.elasticOut)
-                              .fadeIn(delay: Duration(milliseconds: 200 + i * 150)),
+                                delay: Duration(milliseconds: 150 + i * 150),
+                                duration: 450.ms,
+                                curve: Curves.elasticOut,
+                              )
+                              .fadeIn(delay: Duration(milliseconds: 150 + i * 150)),
                         );
                       }),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
 
                     Text(
                       l10n.gameOver,
                       style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.white60,
-                        letterSpacing: 2,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                        color: Colors.white54,
+                        letterSpacing: 2.5,
+                        fontWeight: FontWeight.w600,
                       ),
                     ).animate().fadeIn(delay: 100.ms),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
 
-                    // Score
                     Text(
                       '$score',
                       style: const TextStyle(
-                        fontSize: 72,
+                        fontSize: 76,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                         height: 1.0,
@@ -105,22 +107,19 @@ class ResultPage extends StatelessWidget {
                     )
                         .animate()
                         .fadeIn(delay: 200.ms, duration: 600.ms)
-                        .slideY(begin: 0.3, end: 0, curve: Curves.easeOut),
+                        .slideY(begin: 0.25, end: 0, curve: Curves.easeOut),
 
                     Text(
                       l10n.finalScore,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Colors.white70,
-                      ),
+                      style: const TextStyle(fontSize: 14, color: Colors.white60),
                     ).animate().fadeIn(delay: 300.ms),
 
                     const SizedBox(height: 8),
 
                     Text(
-                      _getMessage(l10n),
+                      _getMessage(),
                       style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 18,
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
@@ -129,69 +128,67 @@ class ResultPage extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 28),
 
-              // ─── Stats Cards ────────────────────────────────
+              // ── Stats panel ──────────────────────────────
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
                   decoration: const BoxDecoration(
                     color: AppColors.background,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
                   ),
                   child: Column(
                     children: [
-                      // Stats row
+                      // Top stat row
                       Row(
                         children: [
                           _StatCard(
-                            icon: Icons.quiz_rounded,
-                            value: '$playedQuestions / $totalQuestions',
-                            label: l10n.question,
-                            color: AppColors.primary,
+                            icon: Icons.check_circle_rounded,
+                            value: '$correctAnswers/$playedQuestions',
+                            label: 'Correct',
+                            color: AppColors.success,
                             delay: 500,
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           _StatCard(
                             icon: Icons.percent_rounded,
                             value: '$pct%',
                             label: l10n.score,
-                            color: _percentage >= 0.6
-                                ? AppColors.success
-                                : AppColors.warning,
+                            color: _accuracy >= 0.6 ? AppColors.success : AppColors.warning,
                             delay: 600,
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           _StatCard(
-                            icon: Icons.star_rounded,
-                            value: '$_stars / 3',
-                            label: 'Stars',
-                            color: Colors.amber,
+                            icon: Icons.local_fire_department_rounded,
+                            value: '$maxStreak',
+                            label: 'Best Streak',
+                            color: AppColors.warning,
                             delay: 700,
                           ),
                         ],
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
 
-                      // Score accuracy bar
-                      _AccuracyBar(percentage: _percentage),
+                      // Accuracy bar
+                      _AccuracyBar(accuracy: _accuracy, delay: 750),
 
                       const Spacer(),
 
-                      // Buttons
+                      // ── Buttons ──────────────────────────
                       SizedBox(
                         width: double.infinity,
                         height: 56,
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             gradient: AppColors.gradientPrimary,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(18),
                             boxShadow: [
                               BoxShadow(
                                 color: AppColors.primary.withOpacity(0.35),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
+                                blurRadius: 14,
+                                offset: const Offset(0, 5),
                               ),
                             ],
                           ),
@@ -202,12 +199,14 @@ class ResultPage extends StatelessWidget {
                               shadowColor: Colors.transparent,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
+                                  borderRadius: BorderRadius.circular(18)),
                             ),
                             icon: const Icon(Icons.home_rounded),
-                            label: Text(l10n.backToHome,
-                                style: const TextStyle(
-                                    fontSize: 17, fontWeight: FontWeight.bold)),
+                            label: Text(
+                              l10n.backToHome,
+                              style: const TextStyle(
+                                  fontSize: 17, fontWeight: FontWeight.bold),
+                            ),
                           ),
                         ),
                       )
@@ -217,13 +216,11 @@ class ResultPage extends StatelessWidget {
 
                       const SizedBox(height: 12),
 
-                      // Play again
                       SizedBox(
                         width: double.infinity,
-                        height: 52,
+                        height: 50,
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            // Pop result + setup, back to home
                             Navigator.of(context)
                               ..pop()
                               ..pop();
@@ -231,11 +228,13 @@ class ResultPage extends StatelessWidget {
                           style: OutlinedButton.styleFrom(
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16)),
+                            side: BorderSide(color: Colors.grey.shade300),
                           ),
                           icon: const Icon(Icons.replay_rounded),
-                          label: const Text('Play Again',
-                              style: TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.w600)),
+                          label: const Text(
+                            'Play Again',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                          ),
                         ),
                       )
                           .animate()
@@ -274,10 +273,10 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),
@@ -289,34 +288,34 @@ class _StatCard extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: color, size: 22),
+              child: Icon(icon, color: color, size: 20),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               value,
               style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
                 color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             Text(
               label,
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
               textAlign: TextAlign.center,
             ),
           ],
         ),
       )
           .animate()
-          .fadeIn(delay: Duration(milliseconds: delay), duration: 400.ms)
+          .fadeIn(delay: Duration(milliseconds: delay), duration: 350.ms)
           .slideY(begin: 0.2, end: 0),
     );
   }
@@ -325,19 +324,20 @@ class _StatCard extends StatelessWidget {
 // ─── Accuracy Bar ─────────────────────────────────────────────────────────────
 
 class _AccuracyBar extends StatelessWidget {
-  final double percentage;
-  const _AccuracyBar({required this.percentage});
+  final double accuracy;
+  final int delay;
+  const _AccuracyBar({required this.accuracy, required this.delay});
 
   @override
   Widget build(BuildContext context) {
-    final color = percentage >= 0.6 ? AppColors.success : AppColors.warning;
-    final pct = (percentage * 100).toInt();
+    final color = accuracy >= 0.6 ? AppColors.success : AppColors.warning;
+    final pct = (accuracy * 100).toInt();
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -352,28 +352,30 @@ class _AccuracyBar extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Accuracy',
-                  style:
-                      TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              const Text(
+                'Accuracy',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
               Text(
                 '$pct%',
                 style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: color),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 13,
+                  color: color,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 10),
           TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0.0, end: percentage),
-            duration: const Duration(milliseconds: 1200),
+            tween: Tween<double>(begin: 0.0, end: accuracy),
+            duration: const Duration(milliseconds: 1100),
             curve: Curves.easeOut,
             builder: (context, value, _) => ClipRRect(
               borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(
                 value: value,
-                backgroundColor: Colors.grey.shade200,
+                backgroundColor: Colors.grey.shade100,
                 valueColor: AlwaysStoppedAnimation<Color>(color),
                 minHeight: 10,
               ),
@@ -381,6 +383,6 @@ class _AccuracyBar extends StatelessWidget {
           ),
         ],
       ),
-    ).animate().fadeIn(delay: 700.ms).slideY(begin: 0.2, end: 0);
+    ).animate().fadeIn(delay: Duration(milliseconds: delay), duration: 350.ms);
   }
 }

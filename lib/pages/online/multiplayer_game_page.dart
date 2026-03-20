@@ -65,7 +65,17 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
 
   void _onRoomUpdate(GameRoom? room) {
     if (room == null || !mounted) return;
-    setState(() => _room = room);
+    setState(() {
+      _room = room;
+      // Initialize the first flag the first time we receive room data.
+      if (_currentFlag == null && room.flagCodes.isNotEmpty) {
+        final flag = _cca2Map[room.flagCodes[0]];
+        if (flag != null) {
+          _currentFlag = flag;
+          _generateOptions(flag);
+        }
+      }
+    });
     if (room.bothFinished && !_gameFinished) {
       _finishGame(room);
     }
@@ -199,15 +209,6 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Initialize flag on first build
-    if (_currentFlag == null && _room != null && _room!.flagCodes.isNotEmpty) {
-      final flag = _cca2Map[_room!.flagCodes[0]];
-      if (flag != null) {
-        _currentFlag = flag;
-        _generateOptions(flag);
-      }
-    }
-
     final opponentScore = widget.isPlayer1
         ? (_room?.player2Score ?? 0)
         : (_room?.player1Score ?? 0);

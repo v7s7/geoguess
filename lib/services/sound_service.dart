@@ -29,17 +29,17 @@ class SoundService {
   static String get _ext => kIsWeb ? 'ogg' : 'mp3';
 
   Future<void> playCorrect() async {
-    if (hapticEnabled) HapticFeedback.lightImpact();
+    if (hapticEnabled && !kIsWeb) HapticFeedback.lightImpact();
     await _play('correct');
   }
 
   Future<void> playWrong() async {
-    if (hapticEnabled) HapticFeedback.mediumImpact();
+    if (hapticEnabled && !kIsWeb) HapticFeedback.mediumImpact();
     await _play('wrong');
   }
 
   Future<void> playSuccess() async {
-    if (hapticEnabled) HapticFeedback.lightImpact();
+    if (hapticEnabled && !kIsWeb) HapticFeedback.lightImpact();
     await _play('success');
   }
 
@@ -53,6 +53,8 @@ class SoundService {
 
   Future<void> _play(String name) async {
     if (!soundEnabled) return;
+    // No audio assets bundled for web — skip entirely to avoid console errors.
+    if (kIsWeb) return;
     try {
       await _sfxPlayer.play(AssetSource('sounds/$name.$_ext'));
     } catch (_) {
