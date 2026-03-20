@@ -8,18 +8,20 @@ import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'services/purchase_service.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
+Future<void> _initFirebase() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
   // Configure flutter_animate defaults
   Animate.restartOnHotReload = true;
 
   // Lock to portrait for best mobile UX
-  SystemChrome.setPreferredOrientations([
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
@@ -31,7 +33,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => PurchaseService()),
         ChangeNotifierProvider(create: (_) => AuthService()),
       ],
-      child: const GeoGuessApp(),
+      child: GeoGuessApp(firebaseFuture: _initFirebase()),
     ),
   );
 }

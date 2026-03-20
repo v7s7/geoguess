@@ -179,13 +179,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get typeMode => 'Typing Mode (No Choices)';
 
-  // ── Multiplayer / Online ───────────────────────────────────────────────────
-
   @override
   String get onlineMatch => 'Online Match';
 
   @override
-  String get onlineMatchDesc => 'Play 20 flags vs a random player\n10 choices per question';
+  String get onlineMatchDesc =>
+      'Play 20 flags vs a random player\n10 choices per question';
 
   @override
   String get findMatch => 'Find Match';
@@ -218,9 +217,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opponent => 'Opponent';
 
   @override
-  String get connectionError => 'Connection error. Check your internet and try again.';
-
-  // ── Home page labels ───────────────────────────────────────────────────────
+  String get connectionError =>
+      'Connection error. Check your internet and try again.';
 
   @override
   String get gameModes => 'GAME MODES';

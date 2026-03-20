@@ -55,5 +55,28 @@
   "tapForHint": "Tap for Hint",
   "typeAnswer": "Type the country name",
   "submit": "Submit",
-  "typeMode": "Typing Mode (No Choices)"
+  "typeMode": "Typing Mode (No Choices)",
+
+  "onlineMatch": "Online Match",
+  "onlineMatchDesc": "Play 20 flags vs a random player\n10 choices per question",
+  "findMatch": "Find Match",
+  "searchingOpponent": "Searching for opponent...",
+  "findingBestMatch": "Finding the best match for you",
+  "waitingForPlayer": "Waiting for a player...",
+  "roomCreated": "Room created! Hang tight.",
+  "youWon": "🏆 You Won!",
+  "youLost": "😔 You Lost",
+  "waitingForOpponentFinish": "Waiting for opponent to finish...",
+  "youLabel": "You",
+  "opponent": "Opponent",
+  "connectionError": "Connection error. Check your internet and try again.",
+
+  "gameModes": "GAME MODES",
+  "speedMode": "Speed",
+  "battleMode": "Battle",
+  "leaderboard": "Leaderboard",
+  "achievements": "Achievements",
+  "online": "Online",
+  "unlockAllFlags": "Unlock All 250+ Flags",
+  "oneTimePurchase": "One-time purchase"
 }

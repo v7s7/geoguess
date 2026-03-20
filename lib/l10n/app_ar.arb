@@ -55,5 +55,28 @@
   "tapForHint": "اضغط للتلميح",
   "typeAnswer": "اكتب اسم الدولة",
   "submit": "إرسال",
-  "typeMode": "وضع الكتابة (بدون خيارات)"
+  "typeMode": "وضع الكتابة (بدون خيارات)",
+
+  "onlineMatch": "مباراة أونلاين",
+  "onlineMatchDesc": "العب 20 علماً ضد لاعب عشوائي\n10 خيارات لكل سؤال",
+  "findMatch": "ابحث عن لاعب",
+  "searchingOpponent": "جاري البحث عن خصم...",
+  "findingBestMatch": "جاري إيجاد أفضل تطابق لك",
+  "waitingForPlayer": "في انتظار لاعب...",
+  "roomCreated": "تم إنشاء الغرفة! انتظر قليلاً.",
+  "youWon": "🏆 فزت!",
+  "youLost": "😔 خسرت",
+  "waitingForOpponentFinish": "في انتظار انتهاء الخصم...",
+  "youLabel": "أنت",
+  "opponent": "الخصم",
+  "connectionError": "خطأ في الاتصال. تحقق من الإنترنت وحاول مجدداً.",
+
+  "gameModes": "أوضاع اللعب",
+  "speedMode": "سرعة",
+  "battleMode": "معركة",
+  "leaderboard": "المتصدرين",
+  "achievements": "الإنجازات",
+  "online": "أونلاين",
+  "unlockAllFlags": "افتح جميع الأعلام (250+)",
+  "oneTimePurchase": "شراء لمرة واحدة"
 }

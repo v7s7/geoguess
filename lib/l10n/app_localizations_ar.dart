@@ -179,13 +179,12 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get typeMode => 'وضع الكتابة (بدون خيارات)';
 
-  // ── Multiplayer / Online ───────────────────────────────────────────────────
-
   @override
   String get onlineMatch => 'مباراة أونلاين';
 
   @override
-  String get onlineMatchDesc => 'العب 20 علماً ضد لاعب عشوائي\n10 خيارات لكل سؤال';
+  String get onlineMatchDesc =>
+      'العب 20 علماً ضد لاعب عشوائي\n10 خيارات لكل سؤال';
 
   @override
   String get findMatch => 'ابحث عن لاعب';
@@ -218,9 +217,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get opponent => 'الخصم';
 
   @override
-  String get connectionError => 'خطأ في الاتصال. تحقق من الإنترنت وحاول مجدداً.';
-
-  // ── Home page labels ───────────────────────────────────────────────────────
+  String get connectionError =>
+      'خطأ في الاتصال. تحقق من الإنترنت وحاول مجدداً.';
 
   @override
   String get gameModes => 'أوضاع اللعب';
