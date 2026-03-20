@@ -237,9 +237,9 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Game Modes',
-                    style: TextStyle(
+                  Text(
+                    l10n.gameModes,
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: Colors.black54,
@@ -251,7 +251,7 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       _ModeCard(
                         icon: Icons.bolt_rounded,
-                        label: 'Speed',
+                        label: l10n.speedMode,
                         color: const Color(0xFFEF4444),
                         enabled: !_isLoading,
                         onTap: () => Navigator.push(
@@ -264,7 +264,7 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(width: 10),
                       _ModeCard(
                         icon: Icons.map_rounded,
-                        label: 'Battle',
+                        label: l10n.battleMode,
                         color: AppColors.secondary,
                         enabled: !_isLoading,
                         onTap: () => Navigator.push(
@@ -315,7 +315,7 @@ class _HomePageState extends State<HomePage> {
                   Expanded(
                     child: _SocialButton(
                       icon: Icons.leaderboard_rounded,
-                      label: 'Leaderboard',
+                      label: l10n.leaderboard,
                       color: AppColors.gold,
                       onTap: () => _requireAuth(context, () => const LeaderboardPage()),
                     ),
@@ -324,7 +324,7 @@ class _HomePageState extends State<HomePage> {
                   Expanded(
                     child: _SocialButton(
                       icon: Icons.military_tech_rounded,
-                      label: 'Achievements',
+                      label: l10n.achievements,
                       color: const Color(0xFF14B8A6),
                       onTap: () => _requireAuth(context, () => const AchievementsPage()),
                     ),
@@ -333,7 +333,7 @@ class _HomePageState extends State<HomePage> {
                   Expanded(
                     child: _SocialButton(
                       icon: Icons.wifi_rounded,
-                      label: 'Online',
+                      label: l10n.online,
                       color: const Color(0xFF10B981),
                       onTap: () => _requireAuth(
                         context,
@@ -564,7 +564,7 @@ class _ReviewBanner extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Review $count mistake${count > 1 ? 's' : ''}',
+                '${AppLocalizations.of(context)!.reviewMistakes} ($count)',
                 style: const TextStyle(
                   color: AppColors.warning,
                   fontWeight: FontWeight.w700,
@@ -601,21 +601,21 @@ class _PremiumBanner extends StatelessWidget {
           children: [
             const Icon(Icons.workspace_premium, color: AppColors.gold, size: 26),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Unlock All 250+ Flags',
-                    style: TextStyle(
+                    AppLocalizations.of(context)!.unlockAllFlags,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
-                    'One-time purchase',
-                    style: TextStyle(color: Colors.white38, fontSize: 11),
+                    AppLocalizations.of(context)!.oneTimePurchase,
+                    style: const TextStyle(color: Colors.white38, fontSize: 11),
                   ),
                 ],
               ),

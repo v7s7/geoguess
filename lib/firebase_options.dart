@@ -57,6 +57,9 @@ class DefaultFirebaseOptions {
     messagingSenderId: '952231467952',
     projectId: 'geo-guess-2001',
     storageBucket: 'geo-guess-2001.firebasestorage.app',
+    // ⚠️  IMPORTANT: change this to match the Bundle ID you set in Xcode
+    // (Runner → Signing & Capabilities → Bundle Identifier)
+    // and what you registered in the Firebase Console iOS app.
     iosBundleId: 'com.example.geoguessFlags',
   );
 

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/country.dart';
 import '../../services/auth_service.dart';
 import '../../services/multiplayer_service.dart';
@@ -42,7 +43,6 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
   Country? _selectedOption;
   bool? _lastCorrect;
 
-  // For current question
   Country? _currentFlag;
   List<Country> _options = [];
 
@@ -51,9 +51,7 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
   @override
   void initState() {
     super.initState();
-    // Build cca2 → Country map
     _cca2Map = {for (final c in widget.countries) c.cca2: c};
-
     _roomSub = _service.watchRoom(widget.roomId).listen(_onRoomUpdate);
   }
 
@@ -67,7 +65,6 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
     if (room == null || !mounted) return;
     setState(() {
       _room = room;
-      // Initialize the first flag the first time we receive room data.
       if (_currentFlag == null && room.flagCodes.isNotEmpty) {
         final flag = _cca2Map[room.flagCodes[0]];
         if (flag != null) {
@@ -86,7 +83,7 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
         .where((c) => c.cca2 != correct.cca2)
         .toList()
       ..shuffle(_rnd);
-    _options = [correct, ...others.take(9)]..shuffle(_rnd); // 10 choices
+    _options = [correct, ...others.take(9)]..shuffle(_rnd);
   }
 
   Country? get _myCurrentFlag {
@@ -114,7 +111,6 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
 
     if (isCorrect) _sound.playCorrect(); else _sound.playWrong();
 
-    // Push to Firebase
     await _service.submitAnswer(
       roomId: widget.roomId,
       isPlayer1: widget.isPlayer1,
@@ -123,12 +119,10 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
       finished: finished,
     );
 
-    // Short pause for feedback, then next question
     await Future.delayed(const Duration(milliseconds: 600));
     if (!mounted) return;
 
     if (finished) {
-      // Wait for opponent or timeout after 30s
       setState(() => _gameFinished = true);
     } else {
       final next = _cca2Map[_room!.flagCodes[newIndex]];
@@ -164,8 +158,9 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
   }
 
   void _showResult(GameRoom room, bool won) {
-    final myName = widget.isPlayer1 ? room.player1Name : room.player2Name ?? 'You';
-    final oppName = widget.isPlayer1 ? (room.player2Name ?? 'Opponent') : room.player1Name;
+    final l10n = AppLocalizations.of(context)!;
+    final myName = widget.isPlayer1 ? room.player1Name : room.player2Name ?? l10n.youLabel;
+    final oppName = widget.isPlayer1 ? (room.player2Name ?? l10n.opponent) : room.player1Name;
     final myScore = widget.isPlayer1 ? room.player1Score : room.player2Score;
     final oppScore = widget.isPlayer1 ? room.player2Score : room.player1Score;
 
@@ -178,7 +173,7 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(won ? '🏆 You Won!' : '😔 You Lost',
+            Text(won ? l10n.youWon : l10n.youLost,
                 style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
             const SizedBox(height: 20),
             Row(
@@ -198,7 +193,7 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
                   Navigator.of(context).pop();
                   Navigator.of(context).pop();
                 },
-                child: const Text('Back to Home'),
+                child: Text(l10n.backToHome),
               ),
             ),
           ],
@@ -209,12 +204,13 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final opponentScore = widget.isPlayer1
         ? (_room?.player2Score ?? 0)
         : (_room?.player1Score ?? 0);
     final opponentName = widget.isPlayer1
-        ? (_room?.player2Name ?? 'Opponent')
-        : _room?.player1Name ?? 'Opponent';
+        ? (_room?.player2Name ?? l10n.opponent)
+        : _room?.player1Name ?? l10n.opponent;
     final opponentIndex = widget.isPlayer1
         ? (_room?.player2Index ?? 0)
         : (_room?.player1Index ?? 0);
@@ -231,13 +227,11 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 child: Column(
                   children: [
-                    // VS row
                     Row(
                       children: [
-                        // Me
                         Expanded(
                           child: _PlayerScoreBox(
-                            name: 'You',
+                            name: l10n.youLabel,
                             score: _myScore,
                             index: _myIndex,
                             isMe: true,
@@ -251,7 +245,6 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
                           ),
                           child: const Text('VS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
                         ),
-                        // Opponent
                         Expanded(
                           child: _PlayerScoreBox(
                             name: opponentName,
@@ -263,7 +256,6 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // Progress
                     ClipRRect(
                       borderRadius: BorderRadius.circular(4),
                       child: LinearProgressIndicator(
@@ -275,7 +267,7 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Question ${_myIndex + 1} / ${MultiplayerService.questionCount}',
+                      '${l10n.question} ${_myIndex + 1} / ${MultiplayerService.questionCount}',
                       style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
                     ),
                   ],
@@ -287,23 +279,22 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
           // ── Game area ───────────────────────────────────────────
           Expanded(
             child: _gameFinished && !(_room?.bothFinished ?? false)
-                ? _buildWaitingForOpponent()
+                ? _buildWaitingForOpponent(l10n)
                 : _currentFlag == null
                     ? const Center(child: CircularProgressIndicator())
-                    : _buildQuestion(),
+                    : _buildQuestion(l10n),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildQuestion() {
+  Widget _buildQuestion(AppLocalizations l10n) {
     final flag = _currentFlag!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Flag
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
@@ -317,7 +308,6 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
 
           const SizedBox(height: 16),
 
-          // 10 choices in 2-column grid
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -350,7 +340,7 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
                   ),
                   child: Center(
                     child: Text(
-                      opt.nameEn,
+                      opt.localizedName(context),
                       style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
                       textAlign: TextAlign.center,
                       maxLines: 2,
@@ -366,16 +356,16 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
     );
   }
 
-  Widget _buildWaitingForOpponent() {
+  Widget _buildWaitingForOpponent(AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const SizedBox(width: 48, height: 48, child: CircularProgressIndicator()),
           const SizedBox(height: 20),
-          const Text('Waiting for opponent to finish...', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(l10n.waitingForOpponentFinish, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text('Your score: $_myScore', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
+          Text('${l10n.score}: $_myScore', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
         ],
       ),
     );

@@ -96,18 +96,26 @@ class MultiplayerService {
   }) async {
     String? joinedRoomId;
 
+    // Fetch waiting rooms and filter out our own client-side
+    // to avoid composite-index requirement from isNotEqualTo on a different field.
+    final snap = await _rooms
+        .where('status', isEqualTo: 'waiting')
+        .limit(20)
+        .get();
+
+    final available = snap.docs.where((d) => d['player1Uid'] != uid).toList();
+    if (available.isEmpty) return joinedRoomId;
+
+    final doc = available.first;
+
     await _db.runTransaction((tx) async {
-      final snap = await _rooms
-          .where('status', isEqualTo: 'waiting')
-          .where('player1Uid', isNotEqualTo: uid)
-          .limit(1)
-          .get();
+      final fresh = await tx.get(doc.reference);
+      // Make sure it's still waiting and still not ours
+      if (!fresh.exists) return;
+      final data = fresh.data() as Map<String, dynamic>;
+      if (data['status'] != 'waiting' || data['player1Uid'] == uid) return;
 
-      if (snap.docs.isEmpty) return;
-
-      final doc = snap.docs.first;
       joinedRoomId = doc.id;
-
       tx.update(doc.reference, {
         'status': 'playing',
         'player2Uid': uid,

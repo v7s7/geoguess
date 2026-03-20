@@ -11,18 +11,22 @@ class PaywallPage extends StatefulWidget {
 }
 
 class _PaywallPageState extends State<PaywallPage> {
+  PurchaseService? _ps;
+
   @override
   void initState() {
     super.initState();
     // Listen for purchase success to auto-close
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ps = context.read<PurchaseService>();
-      ps.addListener(_onPurchaseUpdate);
+      if (!mounted) return;
+      _ps = context.read<PurchaseService>();
+      _ps!.addListener(_onPurchaseUpdate);
     });
   }
 
   void _onPurchaseUpdate() {
-    final ps = context.read<PurchaseService>();
+    final ps = _ps;
+    if (ps == null) return;
     if (ps.purchaseSuccess && mounted) {
       ps.clearPurchaseSuccess();
       Navigator.of(context).pop(true);
@@ -56,8 +60,7 @@ class _PaywallPageState extends State<PaywallPage> {
 
   @override
   void dispose() {
-    final ps = context.read<PurchaseService>();
-    ps.removeListener(_onPurchaseUpdate);
+    _ps?.removeListener(_onPurchaseUpdate);
     super.dispose();
   }
 
