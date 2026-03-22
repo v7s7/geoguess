@@ -81,7 +81,6 @@ class _StartupGate extends StatefulWidget {
 }
 
 class _StartupGateState extends State<_StartupGate> {
-  bool _startupComplete = false;
   String _status = 'Preparing app…';
   String? _startupWarning;
 
@@ -106,9 +105,13 @@ class _StartupGateState extends State<_StartupGate> {
     if (!mounted) return;
 
     startupLog('navigating to home');
-    setState(() {
-      _startupComplete = true;
-    });
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder<void>(
+        pageBuilder: (_, __, ___) => const HomePage(),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      ),
+    );
   }
 
   Future<void> _initializeFirebase() async {
@@ -137,14 +140,9 @@ class _StartupGateState extends State<_StartupGate> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-
-    if (!_startupComplete || l10n == null) {
-      return _StartupScreen(
-        status: l10n == null ? 'Loading interface…' : _status,
-      );
-    }
-
-    return const HomePage();
+    return _StartupScreen(
+      status: l10n == null ? 'Loading interface…' : _status,
+    );
   }
 }
 
