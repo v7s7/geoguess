@@ -81,6 +81,7 @@ class _StartupGate extends StatefulWidget {
 }
 
 class _StartupGateState extends State<_StartupGate> {
+  bool _startupComplete = false;
   String _status = 'Preparing app…';
   String? _startupWarning;
 
@@ -105,22 +106,11 @@ class _StartupGateState extends State<_StartupGate> {
     if (!mounted) return;
 
     startupLog('navigating to home');
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder<void>(
-        opaque: true,
-        pageBuilder: (_, __, ___) => const HomePage(),
-        transitionsBuilder: (_, animation, __, child) =>
-            FadeTransition(opacity: animation, child: child),
-        transitionDuration: const Duration(milliseconds: 300),
-        reverseTransitionDuration: Duration.zero,
-      ),
-    );
+    setState(() => _startupComplete = true);
   }
 
   Future<void> _initializeFirebase() async {
-    setState(() {
-      _status = 'Starting services…';
-    });
+    setState(() => _status = 'Starting services…');
 
     startupLog('before Firebase init');
     try {
@@ -143,8 +133,27 @@ class _StartupGateState extends State<_StartupGate> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return _StartupScreen(
-      status: l10n == null ? 'Loading interface…' : _status,
+    final ready = _startupComplete && l10n != null;
+
+    // HomePage is always in the widget tree and renders immediately.
+    // The startup screen overlays it as an AnimatedOpacity and fades out
+    // when ready. This avoids any navigator route transition that can leave
+    // a blank frame (and expose the window background) on iOS.
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const HomePage(),
+        AnimatedOpacity(
+          opacity: ready ? 0.0 : 1.0,
+          duration: const Duration(milliseconds: 400),
+          child: IgnorePointer(
+            ignoring: ready,
+            child: _StartupScreen(
+              status: l10n == null ? 'Loading interface…' : _status,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
