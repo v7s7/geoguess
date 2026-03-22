@@ -5,10 +5,8 @@ import 'package:geoguess_flags/l10n/app_localizations.dart';
 import '../models/country.dart';
 import '../models/game_config.dart';
 import '../services/country_api.dart';
-import '../services/purchase_service.dart';
 import '../theme/app_theme.dart';
 import 'game_page.dart';
-import 'paywall_page.dart';
 
 class PlaySetupPage extends StatefulWidget {
   const PlaySetupPage({super.key});
@@ -45,20 +43,7 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
   }
 
   void _onQuestionCountTap(int count) {
-    final isPremium = context.read<PurchaseService>().isPremium;
-    if (count == 254 && !isPremium) {
-      _showPaywall();
-      return;
-    }
     setState(() => _questionCount = count);
-  }
-
-  Future<void> _showPaywall() async {
-    final result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(builder: (_) => const PaywallPage()),
-    );
-    if (result == true && mounted) setState(() => _questionCount = 254);
   }
 
   void _startGame() {
@@ -81,7 +66,6 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final isPremium = context.watch<PurchaseService>().isPremium;
 
     if (_error != null) {
       return Scaffold(
@@ -176,7 +160,7 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
 
                   // 2. Questions
                   _Label(l10n.questionsCount),
-                  _buildQuestionChips(isPremium, l10n),
+                  _buildQuestionChips(l10n),
 
                   const SizedBox(height: 26),
 
@@ -245,34 +229,23 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
     );
   }
 
-  Widget _buildQuestionChips(bool isPremium, AppLocalizations l10n) {
+  Widget _buildQuestionChips(AppLocalizations l10n) {
     const counts = [5, 10, 20, 50, 100, 254];
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: counts.map((count) {
-        final isAll = count == 254;
-        final isLocked = isAll && !isPremium;
         final isSelected = _questionCount == count;
-
         return GestureDetector(
           onTap: () => _onQuestionCountTap(count),
           child: AnimatedContainer(
             duration: 200.ms,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? AppColors.primary
-                  : isLocked
-                      ? const Color(0xFF1A1A2E)
-                      : AppColors.surface,
+              color: isSelected ? AppColors.primary : AppColors.surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isSelected
-                    ? AppColors.primary
-                    : isLocked
-                        ? Colors.amber.withOpacity(0.4)
-                        : Colors.grey.shade200,
+                color: isSelected ? AppColors.primary : Colors.grey.shade200,
               ),
               boxShadow: [
                 BoxShadow(
@@ -284,26 +257,13 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
                 ),
               ],
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isLocked) ...[
-                  const Icon(Icons.workspace_premium, size: 13, color: Colors.amber),
-                  const SizedBox(width: 4),
-                ],
-                Text(
-                  isAll ? '${l10n.all} (254)' : '$count',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: isSelected
-                        ? Colors.white
-                        : isLocked
-                            ? Colors.amber
-                            : Colors.black87,
-                  ),
-                ),
-              ],
+            child: Text(
+              count == 254 ? '${l10n.all} (254)' : '$count',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: isSelected ? Colors.white : Colors.black87,
+              ),
             ),
           ),
         );

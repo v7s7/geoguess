@@ -10,12 +10,10 @@ import '../models/game_config.dart';
 import '../services/auth_service.dart';
 import '../services/country_api.dart';
 import '../services/mistakes_provider.dart';
-import '../services/purchase_service.dart';
 import '../theme/app_theme.dart';
 import 'play_setup_page.dart';
 import 'game_page.dart';
 import 'learn_page.dart';
-import 'paywall_page.dart';
 import 'speed_mode_page.dart';
 import 'continent_battle_page.dart';
 import 'leaderboard_page.dart';
@@ -101,10 +99,10 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) return const Scaffold(backgroundColor: Color(0xFF0D1B2E));
     final localeProv = Provider.of<LocaleProvider>(context);
     final mp = Provider.of<MistakesProvider>(context);
-    final ps = Provider.of<PurchaseService>(context);
     final auth = Provider.of<AuthService>(context);
 
     return Scaffold(
@@ -346,22 +344,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // ── Premium banner ──────────────────────────────────
-          if (!ps.isPremium)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: _PremiumBanner(
-                  onTap: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const PaywallPage()),
-                    );
-                  },
-                ).animate().fadeIn(delay: 420.ms).slideY(begin: 0.1, end: 0, delay: 420.ms),
-              ),
-            ),
-
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
       ),
@@ -581,50 +563,3 @@ class _ReviewBanner extends StatelessWidget {
   }
 }
 
-// ─── Premium Banner ───────────────────────────────────────────────────────────
-
-class _PremiumBanner extends StatelessWidget {
-  final VoidCallback onTap;
-  const _PremiumBanner({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1A2E),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.workspace_premium, color: AppColors.gold, size: 26),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.unlockAllFlags,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    AppLocalizations.of(context)!.oneTimePurchase,
-                    style: const TextStyle(color: Colors.white38, fontSize: 11),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded,
-                color: AppColors.gold, size: 13),
-          ],
-        ),
-      ),
-    );
-  }
-}
