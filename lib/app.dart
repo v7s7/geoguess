@@ -133,28 +133,12 @@ class _StartupGateState extends State<_StartupGate> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final ready = _startupComplete && l10n != null;
-
-    // HomePage is always in the widget tree and renders immediately.
-    // The startup screen overlays it as an AnimatedOpacity and fades out
-    // when ready. This avoids any navigator route transition that can leave
-    // a blank frame (and expose the window background) on iOS.
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const HomePage(),
-        AnimatedOpacity(
-          opacity: ready ? 0.0 : 1.0,
-          duration: const Duration(milliseconds: 400),
-          child: IgnorePointer(
-            ignoring: ready,
-            child: _StartupScreen(
-              status: l10n == null ? 'Loading interface…' : _status,
-            ),
-          ),
-        ),
-      ],
-    );
+    if (!_startupComplete || l10n == null) {
+      return _StartupScreen(
+        status: l10n == null ? 'Loading interface…' : _status,
+      );
+    }
+    return const HomePage();
   }
 }
 
