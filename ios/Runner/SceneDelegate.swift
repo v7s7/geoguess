@@ -21,7 +21,12 @@ import UIKit
     // Defer so the window and rootViewController are fully set up.
     // Use keyWindow (replaces deprecated windowScene.windows on iOS 15+).
     DispatchQueue.main.async {
-      let window = windowScene.keyWindow ?? windowScene.windows.first
+      let window: UIWindow?
+      if #available(iOS 15.0, *) {
+        window = windowScene.keyWindow ?? windowScene.windows.first
+      } else {
+        window = windowScene.windows.first
+      }
       window?.backgroundColor = UIColor.white
       if let view = window?.rootViewController?.view {
         view.backgroundColor = UIColor.white
