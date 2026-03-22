@@ -101,7 +101,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) return const Scaffold(backgroundColor: Color(0xFF0D1B2E));
     final localeProv = Provider.of<LocaleProvider>(context);
     final mp = Provider.of<MistakesProvider>(context);
     final ps = Provider.of<PurchaseService>(context);
