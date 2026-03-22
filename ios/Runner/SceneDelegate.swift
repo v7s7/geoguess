@@ -8,10 +8,13 @@ import UIKit
     options connectionOptions: UIScene.ConnectionOptions
   ) {
     super.scene(scene, willConnectTo: session, options: connectionOptions)
-    // Match the app's startup screen background before Flutter's first frame renders.
+    // Set the Flutter view's background to opaque white so that if Flutter's
+    // Metal layer is transparent during any frame (e.g. during route transitions),
+    // users see white instead of the system window background (which is black in
+    // dark environments). Flutter's own Scaffold backgrounds paint on top of this.
     guard let windowScene = scene as? UIWindowScene else { return }
-    windowScene.windows.first?.backgroundColor = UIColor(
-      red: 13 / 255, green: 27 / 255, blue: 46 / 255, alpha: 1
-    )
+    let window = windowScene.windows.first
+    window?.backgroundColor = UIColor.white
+    window?.rootViewController?.view.backgroundColor = UIColor.white
   }
 }
