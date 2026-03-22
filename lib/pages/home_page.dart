@@ -365,7 +365,7 @@ class _BigPlayButton extends StatelessWidget {
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: AnimatedContainer(
-        duration: 200.ms,
+        duration: const Duration(milliseconds: 200),
         height: 64,
         decoration: BoxDecoration(
           color: enabled ? Colors.white : Colors.white38,
