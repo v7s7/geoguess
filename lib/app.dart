@@ -132,12 +132,13 @@ class _StartupGateState extends State<_StartupGate> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    if (!_startupComplete || l10n == null) {
+    if (!_startupComplete) {
+      final l10n = AppLocalizations.of(context);
       return _StartupScreen(
         status: l10n == null ? 'Loading interface…' : _status,
       );
     }
+    startupLog('_StartupGate build: showing HomePage');
     return const HomePage();
   }
 }

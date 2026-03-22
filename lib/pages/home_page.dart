@@ -100,7 +100,13 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    if (l10n == null) return const Scaffold(backgroundColor: Color(0xFF0D1B2E));
+    debugPrint('[GeoGuess][HomePage] build called, l10n=${l10n != null ? "OK" : "NULL"}');
+    if (l10n == null) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     final localeProv = Provider.of<LocaleProvider>(context);
     final mp = Provider.of<MistakesProvider>(context);
     final auth = Provider.of<AuthService>(context);
