@@ -151,7 +151,7 @@ class _StartupScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1B2E),
+      backgroundColor: AppColors.primary,
       body: SafeArea(
         child: Center(
           child: Padding(
