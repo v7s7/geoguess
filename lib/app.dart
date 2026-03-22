@@ -107,8 +107,11 @@ class _StartupGateState extends State<_StartupGate> {
     startupLog('navigating to home');
     Navigator.of(context).pushReplacement(
       PageRouteBuilder<void>(
+        opaque: true,
         pageBuilder: (_, __, ___) => const HomePage(),
-        transitionDuration: Duration.zero,
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
+        transitionDuration: const Duration(milliseconds: 300),
         reverseTransitionDuration: Duration.zero,
       ),
     );
