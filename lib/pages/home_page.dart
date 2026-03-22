@@ -114,12 +114,11 @@ class _HomePageState extends State<HomePage> {
         slivers: [
           // ── Gradient hero header ──────────────────────────────
           SliverToBoxAdapter(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: AppColors.gradientHero,
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
-              ),
-              child: SafeArea(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+              child: DecoratedBox(
+                decoration: const BoxDecoration(gradient: AppColors.gradientHero),
+                child: SafeArea(
                 bottom: false,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
@@ -226,6 +225,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
+            ),
             ),
           ),
 
