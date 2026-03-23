@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -89,10 +88,6 @@ class _StartupGateState extends State<_StartupGate> {
   @override
   void initState() {
     super.initState();
-    startupLog('_StartupGate initState');
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      startupLog('FIRST FRAME RENDERED');
-    });
     unawaited(_bootstrap());
   }
 
@@ -111,17 +106,7 @@ class _StartupGateState extends State<_StartupGate> {
     if (!mounted) return;
 
     startupLog('navigating to home');
-    startupLog('mounted=$mounted before setState');
-    if (mounted) {
-      setState(() {
-        startupLog('inside setState callback');
-        _startupComplete = true;
-      });
-      startupLog('after setState call');
-      SchedulerBinding.instance.addPostFrameCallback((_) {
-        startupLog('POST-STARTUP FRAME RENDERED');
-      });
-    }
+    setState(() => _startupComplete = true);
   }
 
   Future<void> _initializeFirebase() async {
@@ -147,10 +132,8 @@ class _StartupGateState extends State<_StartupGate> {
 
   @override
   Widget build(BuildContext context) {
-    startupLog('_StartupGate build: _startupComplete=$_startupComplete');
     if (!_startupComplete) {
       final l10n = AppLocalizations.of(context);
-      startupLog('_StartupGate: returning StartupScreen, l10n=${l10n != null ? "OK" : "NULL"}');
       return _StartupScreen(
         status: l10n == null ? 'Loading interface…' : _status,
       );
@@ -167,7 +150,6 @@ class _StartupScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('[GeoGuess] _StartupScreen.build called');
     return const Scaffold(
       backgroundColor: Color(0xFF4F46E5),
       body: Center(
