@@ -174,13 +174,19 @@ class _MultiplayerLobbyPageState extends State<MultiplayerLobbyPage>
         GestureDetector(
           onTap: _findMatch,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)]),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.5), blurRadius: 20, offset: const Offset(0, 8))],
             ),
-            child: Row(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)]),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
+                  child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.search_rounded, color: Colors.white, size: 24),
@@ -189,6 +195,9 @@ class _MultiplayerLobbyPageState extends State<MultiplayerLobbyPage>
               ],
             ),
           ),
+        ),
+      ),
+    ),
         ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0),
       ],
     );

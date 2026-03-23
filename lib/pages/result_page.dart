@@ -180,9 +180,8 @@ class ResultPage extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         height: 56,
-                        child: DecoratedBox(
+                        child: Container(
                           decoration: BoxDecoration(
-                            gradient: AppColors.gradientPrimary,
                             borderRadius: BorderRadius.circular(18),
                             boxShadow: [
                               BoxShadow(
@@ -192,7 +191,11 @@ class ResultPage extends StatelessWidget {
                               ),
                             ],
                           ),
-                          child: ElevatedButton.icon(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(18),
+                            child: DecoratedBox(
+                              decoration: const BoxDecoration(gradient: AppColors.gradientPrimary),
+                              child: ElevatedButton.icon(
                             onPressed: () => Navigator.of(context).pop(),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
@@ -209,7 +212,9 @@ class ResultPage extends StatelessWidget {
                             ),
                           ),
                         ),
-                      )
+                      ),
+                    ),
+                  )
                           .animate()
                           .fadeIn(delay: 800.ms)
                           .slideY(begin: 0.3, end: 0),
