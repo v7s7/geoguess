@@ -809,12 +809,11 @@ class _TypeInput extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           height: 52,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: AppColors.gradientPrimary,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: ElevatedButton(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: DecoratedBox(
+              decoration: const BoxDecoration(gradient: AppColors.gradientPrimary),
+              child: ElevatedButton(
               onPressed: () => onSubmit(controller.text),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
@@ -827,6 +826,7 @@ class _TypeInput extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ],
     );
   }

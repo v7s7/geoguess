@@ -64,13 +64,15 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.abdulaziz.geoguessflags',
   );
 
+  // TODO: Register a macOS app in Firebase Console (bundle ID: com.example.geoguessFlags)
+  // and replace these credentials with the real macOS GoogleService-Info.plist values.
+  // Using iOS credentials as a temporary workaround for development.
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'YOUR_MACOS_API_KEY',
-    appId: '1:000000000000:ios:0000000000000000000000',
-    messagingSenderId: '000000000000',
-    projectId: 'your-project-id',
-    storageBucket: 'your-project-id.appspot.com',
-    iosClientId: 'YOUR_IOS_CLIENT_ID',
+    apiKey: 'AIzaSyCWGYiJDfWIomZHJ2iXntpo8pocAYZFVK8',
+    appId: '1:952231467952:ios:1477848ef85138e73f1475',
+    messagingSenderId: '952231467952',
+    projectId: 'geo-guess-2001',
+    storageBucket: 'geo-guess-2001.firebasestorage.app',
     iosBundleId: 'com.example.geoguessFlags',
   );
 }

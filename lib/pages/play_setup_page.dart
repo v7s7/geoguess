@@ -89,12 +89,11 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
       body: Column(
         children: [
           // ── Header ─────────────────────────────────────
-          Container(
-            decoration: const BoxDecoration(
-              gradient: AppColors.gradientPrimary,
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
-            ),
-            child: SafeArea(
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+            child: DecoratedBox(
+              decoration: const BoxDecoration(gradient: AppColors.gradientPrimary),
+              child: SafeArea(
               bottom: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(4, 4, 16, 20),
@@ -119,6 +118,7 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
                 ),
               ),
             ),
+          ),
           ),
 
           // ── Content ────────────────────────────────────
@@ -196,9 +196,8 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
         child: SizedBox(
           width: double.infinity,
           height: 62,
-          child: DecoratedBox(
+          child: Container(
             decoration: BoxDecoration(
-              gradient: AppColors.gradientPrimary,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
@@ -208,19 +207,25 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
                 ),
               ],
             ),
-            child: ElevatedButton.icon(
-              onPressed: _startGame,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-              ),
-              icon: const Icon(Icons.play_circle_fill_rounded, size: 26),
-              label: Text(
-                l10n.start,
-                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: DecoratedBox(
+                decoration: const BoxDecoration(gradient: AppColors.gradientPrimary),
+                child: ElevatedButton.icon(
+                  onPressed: _startGame,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                  ),
+                  icon: const Icon(Icons.play_circle_fill_rounded, size: 26),
+                  label: Text(
+                    l10n.start,
+                    style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+                  ),
+                ),
               ),
             ),
           ),

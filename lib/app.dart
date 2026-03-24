@@ -132,12 +132,13 @@ class _StartupGateState extends State<_StartupGate> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    if (!_startupComplete || l10n == null) {
+    if (!_startupComplete) {
+      final l10n = AppLocalizations.of(context);
       return _StartupScreen(
         status: l10n == null ? 'Loading interface…' : _status,
       );
     }
+    startupLog('_StartupGate build: showing HomePage');
     return const HomePage();
   }
 }
@@ -149,67 +150,25 @@ class _StartupScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D1B2E),
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 88,
-                  height: 88,
-                  decoration: BoxDecoration(
-                    gradient: AppColors.gradientHero,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.18),
-                        blurRadius: 22,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
-                  ),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    '🚩',
-                    style: TextStyle(fontSize: 42),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'GeoGuess Flags',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  status,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 15,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.6,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                ),
-              ],
+    return const Scaffold(
+      backgroundColor: Color(0xFF4F46E5),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('🚩', style: TextStyle(fontSize: 52)),
+            SizedBox(height: 20),
+            Text(
+              'GeoGuess Flags',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
+            SizedBox(height: 20),
+            CircularProgressIndicator(color: Colors.white),
+          ],
         ),
       ),
     );

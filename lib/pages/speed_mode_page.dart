@@ -245,13 +245,22 @@ class _SpeedModePageState extends State<SpeedModePage>
           GestureDetector(
             onTap: _start,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFFDC2626), Color(0xFFEF4444)]),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.4), blurRadius: 16, offset: const Offset(0, 6))],
               ),
-              child: const Text('START!', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 2)),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(colors: [Color(0xFFDC2626), Color(0xFFEF4444)]),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
+                    child: const Text('START!', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                  ),
+                ),
+              ),
             ),
           ).animate().fadeIn(delay: 400.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1)),
         ],
@@ -352,12 +361,13 @@ class _SpeedModePageState extends State<SpeedModePage>
             SizedBox(
               width: double.infinity,
               height: 56,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [Color(0xFFDC2626), Color(0xFFEF4444)]),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: ElevatedButton.icon(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(colors: [Color(0xFFDC2626), Color(0xFFEF4444)]),
+                  ),
+                  child: ElevatedButton.icon(
                   onPressed: () {
                     setState(() {
                       _timeLeft = totalSeconds;
@@ -375,6 +385,7 @@ class _SpeedModePageState extends State<SpeedModePage>
                 ),
               ),
             ),
+          ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => Navigator.pop(context),

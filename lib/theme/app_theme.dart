@@ -247,11 +247,8 @@ class GradientButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: height,
-      child: DecoratedBox(
+      child: Container(
         decoration: BoxDecoration(
-          gradient: onPressed == null
-              ? const LinearGradient(colors: [Colors.grey, Colors.grey])
-              : gradient,
           borderRadius: BorderRadius.circular(borderRadius),
           boxShadow: onPressed == null
               ? null
@@ -263,19 +260,29 @@ class GradientButton extends StatelessWidget {
                   ),
                 ],
         ),
-        child: ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(borderRadius),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: onPressed == null
+                  ? const LinearGradient(colors: [Colors.grey, Colors.grey])
+                  : gradient,
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-            textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            child: ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+              child: child,
+            ),
           ),
-          child: child,
         ),
       ),
     );

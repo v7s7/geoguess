@@ -1,7 +1,4 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:geoguess_flags/l10n/app_localizations.dart';
 import '../app.dart';
@@ -100,7 +97,13 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    if (l10n == null) return const Scaffold(backgroundColor: Color(0xFF0D1B2E));
+    debugPrint('[GeoGuess][HomePage] build called, l10n=${l10n != null ? "OK" : "NULL"}');
+    if (l10n == null) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     final localeProv = Provider.of<LocaleProvider>(context);
     final mp = Provider.of<MistakesProvider>(context);
     final auth = Provider.of<AuthService>(context);
@@ -116,6 +119,7 @@ class _HomePageState extends State<HomePage> {
                 gradient: AppColors.gradientHero,
                 borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
               ),
+              clipBehavior: Clip.antiAlias,
               child: SafeArea(
                 bottom: false,
                 child: Padding(
@@ -182,14 +186,12 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                         ],
-                      ).animate().fadeIn(duration: 300.ms),
+                      ),
 
                       const SizedBox(height: 28),
 
                       // Hero flag + title
-                      const Text('🚩', style: TextStyle(fontSize: 64))
-                          .animate()
-                          .scale(begin: const Offset(0.5, 0.5), duration: 500.ms, curve: Curves.elasticOut),
+                      const Text('🚩', style: TextStyle(fontSize: 64)),
 
                       const SizedBox(height: 12),
                       Text(
@@ -199,7 +201,7 @@ class _HomePageState extends State<HomePage> {
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
                         ),
-                      ).animate().fadeIn(delay: 150.ms),
+                      ),
 
                       const SizedBox(height: 6),
                       Text(
@@ -208,7 +210,7 @@ class _HomePageState extends State<HomePage> {
                           color: Colors.white.withOpacity(0.45),
                           fontSize: 12,
                         ),
-                      ).animate().fadeIn(delay: 200.ms),
+                      ),
 
                       const SizedBox(height: 28),
 
@@ -220,7 +222,7 @@ class _HomePageState extends State<HomePage> {
                           context,
                           MaterialPageRoute(builder: (_) => const PlaySetupPage()),
                         ),
-                      ).animate().fadeIn(delay: 250.ms).slideY(begin: 0.2, end: 0, delay: 250.ms),
+                      ),
                     ],
                   ),
                 ),
@@ -286,7 +288,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                     ],
-                  ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1, end: 0, delay: 300.ms),
+                  ),
                 ],
               ),
             ),
@@ -300,7 +302,7 @@ class _HomePageState extends State<HomePage> {
                 child: _ReviewBanner(
                   count: mp.mistakenCca2s.length,
                   onTap: () => _startReview(context, mp),
-                ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.1, end: 0, delay: 350.ms),
+                ),
               ),
             ),
 
@@ -340,7 +342,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ],
-              ).animate().fadeIn(delay: 380.ms).slideY(begin: 0.1, end: 0, delay: 380.ms),
+              ),
             ),
           ),
 
@@ -364,7 +366,7 @@ class _BigPlayButton extends StatelessWidget {
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: AnimatedContainer(
-        duration: 200.ms,
+        duration: const Duration(milliseconds: 200),
         height: 64,
         decoration: BoxDecoration(
           color: enabled ? Colors.white : Colors.white38,
