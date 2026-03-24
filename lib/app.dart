@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -112,12 +113,17 @@ class _StartupGateState extends State<_StartupGate> {
   Future<void> _initializeFirebase() async {
     setState(() => _status = 'Starting services…');
 
+    // Web cold-starts are slower — give Firebase more time to load its JS SDK.
+    final timeout = kIsWeb
+        ? const Duration(seconds: 20)
+        : const Duration(seconds: 10);
+
     startupLog('before Firebase init');
     try {
       if (Firebase.apps.isEmpty) {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
-        ).timeout(const Duration(seconds: 5));
+        ).timeout(timeout);
       }
       startupLog('after Firebase init');
     } on TimeoutException {
