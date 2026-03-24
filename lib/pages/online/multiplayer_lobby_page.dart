@@ -80,6 +80,8 @@ class _MultiplayerLobbyPageState extends State<MultiplayerLobbyPage>
       if (room == null || !mounted) return;
       if (room.status == 'playing' && room.hasOpponent) {
         _roomSub?.cancel();
+        // Clear state so dispose() does not delete the active game room.
+        setState(() => _state = _LobbyState.searching);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
