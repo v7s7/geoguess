@@ -153,7 +153,7 @@ class MultiplayerService {
     if (finished) {
       updates['updatedAt'] = FieldValue.serverTimestamp();
     }
-    await _rooms.doc(roomId).update(updates);
+    await _rooms.doc(roomId).set(updates, SetOptions(merge: true));
   }
 
   // ── Cleanup stale waiting rooms ────────────────────────────────────────────────
