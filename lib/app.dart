@@ -114,15 +114,32 @@ class _StartupGateState extends State<_StartupGate> {
     setState(() => _status = 'Starting services…');
     startupLog('before Firebase init');
     try {
-      if (Firebase.apps.isEmpty) {
-        // On web (including iOS Chrome/Safari), Firebase loads its JS SDK which
-        // can be slow on mobile networks — no timeout so we always wait for it.
-        // On native we apply a 10s safety cap.
-        if (kIsWeb) {
-          await Firebase.initializeApp(
-            options: DefaultFirebaseOptions.currentPlatform,
-          );
-        } else {
+      if (kIsWeb) {
+        // On iOS Safari/Chrome (both use WebKit), the Firebase JS interop
+        // globals (`firebase.apps`, `firebase.initializeApp`) are resolved
+        // lazily and may not be available on the very first Dart frame.
+        // Yielding 200 ms lets the JS engine finish evaluating all bundled
+        // modules before we touch the interop.  If the first attempt still
+        // throws a "Null check operator" error, we retry once after a longer
+        // pause — this covers slower devices and cold-start cache misses.
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        if (Firebase.apps.isEmpty) {
+          try {
+            await Firebase.initializeApp(
+              options: DefaultFirebaseOptions.currentPlatform,
+            );
+          } catch (firstError) {
+            startupLog('Firebase init attempt 1 failed ($firstError); retrying…');
+            await Future<void>.delayed(const Duration(milliseconds: 800));
+            // Second attempt — if this also throws the outer catch handles it.
+            await Firebase.initializeApp(
+              options: DefaultFirebaseOptions.currentPlatform,
+            );
+          }
+        }
+      } else {
+        // On native we apply a 10 s safety cap.
+        if (Firebase.apps.isEmpty) {
           await Firebase.initializeApp(
             options: DefaultFirebaseOptions.currentPlatform,
           ).timeout(const Duration(seconds: 10));
