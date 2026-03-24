@@ -78,5 +78,17 @@
   "achievements": "الإنجازات",
   "online": "أونلاين",
   "unlockAllFlags": "افتح جميع الأعلام (250+)",
-  "oneTimePurchase": "شراء لمرة واحدة"
+  "oneTimePurchase": "شراء لمرة واحدة",
+
+  "timesUp": "⏱ انتهى الوقت!",
+  "playAgain": "العب مجدداً",
+  "correct": "صحيح",
+  "bestStreak": "أفضل تتالي",
+  "accuracy": "الدقة",
+  "outstanding": "ممتاز! 🏆",
+  "greatJob": "عمل رائع! 🎉",
+  "goodEffort": "جهد جيد! 💪",
+  "keepPracticing": "استمر في التدريب! 📚",
+  "speedModeDesc": "أجب على أكبر عدد من الأعلام في 60 ثانية!",
+  "speedModeHint": "4 خيارات · تغذية راجعة فورية · بدون انتظار"
 }

@@ -29,11 +29,11 @@ class ResultPage extends StatelessWidget {
     return 0;
   }
 
-  String _getMessage() {
-    if (_accuracy >= 0.9) return 'Outstanding! 🏆';
-    if (_accuracy >= 0.6) return 'Great job! 🎉';
-    if (_accuracy >= 0.3) return 'Good effort! 💪';
-    return 'Keep practicing! 📚';
+  String _getMessage(AppLocalizations l10n) {
+    if (_accuracy >= 0.9) return l10n.outstanding;
+    if (_accuracy >= 0.6) return l10n.greatJob;
+    if (_accuracy >= 0.3) return l10n.goodEffort;
+    return l10n.keepPracticing;
   }
 
   @override
@@ -117,7 +117,7 @@ class ResultPage extends StatelessWidget {
                     const SizedBox(height: 8),
 
                     Text(
-                      _getMessage(),
+                      _getMessage(l10n),
                       style: const TextStyle(
                         fontSize: 18,
                         color: Colors.white,
@@ -146,7 +146,7 @@ class ResultPage extends StatelessWidget {
                           _StatCard(
                             icon: Icons.check_circle_rounded,
                             value: '$correctAnswers/$playedQuestions',
-                            label: 'Correct',
+                            label: l10n.correct,
                             color: AppColors.success,
                             delay: 500,
                           ),
@@ -162,7 +162,7 @@ class ResultPage extends StatelessWidget {
                           _StatCard(
                             icon: Icons.local_fire_department_rounded,
                             value: '$maxStreak',
-                            label: 'Best Streak',
+                            label: l10n.bestStreak,
                             color: AppColors.warning,
                             delay: 700,
                           ),
@@ -236,9 +236,9 @@ class ResultPage extends StatelessWidget {
                             side: BorderSide(color: Colors.grey.shade300),
                           ),
                           icon: const Icon(Icons.replay_rounded),
-                          label: const Text(
-                            'Play Again',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                          label: Text(
+                            l10n.playAgain,
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                           ),
                         ),
                       )
@@ -357,9 +357,9 @@ class _AccuracyBar extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Accuracy',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              Text(
+                AppLocalizations.of(context)!.accuracy,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
               ),
               Text(
                 '$pct%',

@@ -178,7 +178,7 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
       if (!correct && !timeOut) {
         _feedbackMessage = '${l10n.correctAnswerIs} $correctName';
       } else if (timeOut) {
-        _feedbackMessage = '⏱ Time\'s up! — $correctName';
+        _feedbackMessage = '${l10n.timesUp} — $correctName';
       } else if (widget.config.isReviewMode) {
         _feedbackMessage = l10n.mistakesCleared;
       }

@@ -243,4 +243,37 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get oneTimePurchase => 'شراء لمرة واحدة';
+
+  @override
+  String get timesUp => '⏱ انتهى الوقت!';
+
+  @override
+  String get playAgain => 'العب مجدداً';
+
+  @override
+  String get correct => 'صحيح';
+
+  @override
+  String get bestStreak => 'أفضل تتالي';
+
+  @override
+  String get accuracy => 'الدقة';
+
+  @override
+  String get outstanding => 'ممتاز! 🏆';
+
+  @override
+  String get greatJob => 'عمل رائع! 🎉';
+
+  @override
+  String get goodEffort => 'جهد جيد! 💪';
+
+  @override
+  String get keepPracticing => 'استمر في التدريب! 📚';
+
+  @override
+  String get speedModeDesc => 'أجب على أكبر عدد من الأعلام في 60 ثانية!';
+
+  @override
+  String get speedModeHint => '4 خيارات · تغذية راجعة فورية · بدون انتظار';
 }

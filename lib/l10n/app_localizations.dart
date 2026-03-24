@@ -565,6 +565,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'One-time purchase'**
   String get oneTimePurchase;
+
+  /// No description provided for @timesUp.
+  ///
+  /// In en, this message translates to:
+  /// **'⏱ Time\'s up!'**
+  String get timesUp;
+
+  /// No description provided for @playAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Play Again'**
+  String get playAgain;
+
+  /// No description provided for @correct.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct'**
+  String get correct;
+
+  /// No description provided for @bestStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Best Streak'**
+  String get bestStreak;
+
+  /// No description provided for @accuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'Accuracy'**
+  String get accuracy;
+
+  /// No description provided for @outstanding.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding! 🏆'**
+  String get outstanding;
+
+  /// No description provided for @greatJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Great job! 🎉'**
+  String get greatJob;
+
+  /// No description provided for @goodEffort.
+  ///
+  /// In en, this message translates to:
+  /// **'Good effort! 💪'**
+  String get goodEffort;
+
+  /// No description provided for @keepPracticing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep practicing! 📚'**
+  String get keepPracticing;
+
+  /// No description provided for @speedModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer as many flags as possible in 60 seconds!'**
+  String get speedModeDesc;
+
+  /// No description provided for @speedModeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'4 choices · instant feedback · no waiting'**
+  String get speedModeHint;
 }
 
 class _AppLocalizationsDelegate
