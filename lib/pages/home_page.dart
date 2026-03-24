@@ -121,7 +121,9 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
+      body: KeyedSubtree(
+        key: ValueKey(localeProv.locale.languageCode),
+        child: CustomScrollView(
         slivers: [
           // ── Gradient hero header ──────────────────────────────
           SliverToBoxAdapter(
@@ -359,6 +361,7 @@ class _HomePageState extends State<HomePage> {
 
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
+      ),
       ),
     );
   }
