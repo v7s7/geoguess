@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:geoguess_flags/l10n/app_localizations.dart';
 import '../app.dart';
@@ -44,9 +45,19 @@ class _HomePageState extends State<HomePage> {
           _allCountries = countries;
           _isLoading = false;
         });
+        _preloadFlags(countries);
       }
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _preloadFlags(List<Country> countries) {
+    if (!mounted) return;
+    // Shuffle so we don't always preload the same flags
+    final shuffled = List<Country>.from(countries)..shuffle();
+    for (final country in shuffled.take(40)) {
+      precacheImage(CachedNetworkImageProvider(country.flagUrl), context);
     }
   }
 

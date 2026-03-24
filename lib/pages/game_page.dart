@@ -215,18 +215,39 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
     final uid = context.read<AuthService>().uid;
     if (uid == null) return;
     final userSvc = UserService();
+
     await userSvc.recordGameResult(uid: uid, score: _score, won: false);
-    await userSvc.updateStreak(uid);
+    final streak = await userSvc.updateStreak(uid);
+
     await userSvc.unlockAchievement(uid, 'first_game');
+
+    // Perfect score
     final maxScore = played * Scoring.basePoints;
     if (maxScore > 0 && _score >= maxScore) {
       await userSvc.unlockAchievement(uid, 'perfect_score');
     }
-    if (_engine.totalQuestions >= 20) {
-      await userSvc.unlockAchievement(uid, 'quiz_master');
-    }
+
+    // Streak achievements
+    if (streak >= 3) await userSvc.unlockAchievement(uid, 'streak_3');
+    if (streak >= 7) await userSvc.unlockAchievement(uid, 'streak_7');
+
+    // World master
     if (_engine.totalQuestions >= widget.countries.length && widget.countries.length > 200) {
       await userSvc.unlockAchievement(uid, 'world_master');
+    }
+
+    // Quiz master: requires 50 games played total
+    final profile = await userSvc.getProfile(uid);
+    if ((profile?.gamesPlayed ?? 0) >= 50) {
+      await userSvc.unlockAchievement(uid, 'quiz_master');
+    }
+
+    // Review cleared: all mistakes corrected
+    if (widget.config.isReviewMode) {
+      final mp = context.read<MistakesProvider>();
+      if (mp.mistakenCca2s.isEmpty) {
+        await userSvc.unlockAchievement(uid, 'review_cleared');
+      }
     }
   }
 
