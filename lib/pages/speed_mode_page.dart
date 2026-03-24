@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import 'package:geoguess_flags/l10n/app_localizations.dart';
 import '../models/country.dart';
 import '../services/auth_service.dart';
 import '../services/sound_service.dart';
@@ -109,10 +110,13 @@ class _SpeedModePageState extends State<SpeedModePage>
     setState(() => _finished = true);
     _sound.playSuccess();
 
-    // Save high score
     final uid = context.read<AuthService>().uid;
     if (uid != null) {
-      await UserService().updateSpeedScore(uid, _score);
+      final userSvc = UserService();
+      await userSvc.updateSpeedScore(uid, _score);
+      if (_correct >= 30) {
+        await userSvc.unlockAchievement(uid, 'speed_demon');
+      }
     }
   }
 
@@ -158,10 +162,10 @@ class _SpeedModePageState extends State<SpeedModePage>
                           icon: const Icon(Icons.close, color: Colors.white),
                           onPressed: () => Navigator.pop(context),
                         ),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            '⚡ Speed Mode',
-                            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                            '⚡ ${AppLocalizations.of(context)!.speedMode}',
+                            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                           ),
                         ),
                         // Score
@@ -234,12 +238,12 @@ class _SpeedModePageState extends State<SpeedModePage>
         children: [
           const Icon(Icons.bolt, size: 80, color: AppColors.warning).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
           const SizedBox(height: 16),
-          const Text('⚡ SPEED MODE', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.black87)),
+          Text('⚡ ${AppLocalizations.of(context)!.speedMode.toUpperCase()}', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.black87)),
           const SizedBox(height: 8),
-          Text('Answer as many flags as possible in 60 seconds!',
+          Text(AppLocalizations.of(context)!.speedModeDesc,
               style: TextStyle(fontSize: 16, color: Colors.grey.shade600), textAlign: TextAlign.center),
           const SizedBox(height: 8),
-          Text('4 choices · instant feedback · no waiting',
+          Text(AppLocalizations.of(context)!.speedModeHint,
               style: TextStyle(fontSize: 13, color: Colors.grey.shade400)),
           const SizedBox(height: 40),
           GestureDetector(
@@ -257,7 +261,7 @@ class _SpeedModePageState extends State<SpeedModePage>
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
-                    child: const Text('START!', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                    child: Text(AppLocalizations.of(context)!.start.toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 2)),
                   ),
                 ),
               ),
@@ -320,7 +324,7 @@ class _SpeedModePageState extends State<SpeedModePage>
                   ),
                   child: Center(
                     child: Text(
-                      option.nameEn,
+                      option.localizedName(context),
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                       textAlign: TextAlign.center,
                       maxLines: 2,
@@ -346,15 +350,15 @@ class _SpeedModePageState extends State<SpeedModePage>
           children: [
             const Icon(Icons.timer_off_rounded, size: 64, color: AppColors.error).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
             const SizedBox(height: 16),
-            const Text("Time's Up!", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+            Text(AppLocalizations.of(context)!.timesUp, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
             const SizedBox(height: 32),
-            _ResultCard(label: 'Score', value: '$_score', color: AppColors.primary, icon: Icons.star_rounded),
+            _ResultCard(label: AppLocalizations.of(context)!.score, value: '$_score', color: AppColors.primary, icon: Icons.star_rounded),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _ResultCard(label: 'Correct', value: '$_correct', color: AppColors.success, icon: Icons.check_rounded)),
+                Expanded(child: _ResultCard(label: AppLocalizations.of(context)!.correct, value: '$_correct', color: AppColors.success, icon: Icons.check_rounded)),
                 const SizedBox(width: 12),
-                Expanded(child: _ResultCard(label: 'Accuracy', value: '$accuracy%', color: AppColors.warning, icon: Icons.percent_rounded)),
+                Expanded(child: _ResultCard(label: AppLocalizations.of(context)!.accuracy, value: '$accuracy%', color: AppColors.warning, icon: Icons.percent_rounded)),
               ],
             ),
             const SizedBox(height: 32),
@@ -381,7 +385,7 @@ class _SpeedModePageState extends State<SpeedModePage>
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
                   icon: const Icon(Icons.replay_rounded),
-                  label: const Text('Play Again', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                  label: Text(AppLocalizations.of(context)!.playAgain, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                 ),
               ),
             ),
@@ -390,7 +394,7 @@ class _SpeedModePageState extends State<SpeedModePage>
             OutlinedButton.icon(
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Icons.home_rounded),
-              label: const Text('Home'),
+              label: Text(AppLocalizations.of(context)!.backToHome),
               style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
             ),
           ],

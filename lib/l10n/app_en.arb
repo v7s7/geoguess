@@ -78,5 +78,17 @@
   "achievements": "Achievements",
   "online": "Online",
   "unlockAllFlags": "Unlock All 250+ Flags",
-  "oneTimePurchase": "One-time purchase"
+  "oneTimePurchase": "One-time purchase",
+
+  "timesUp": "⏱ Time's up!",
+  "playAgain": "Play Again",
+  "correct": "Correct",
+  "bestStreak": "Best Streak",
+  "accuracy": "Accuracy",
+  "outstanding": "Outstanding! 🏆",
+  "greatJob": "Great job! 🎉",
+  "goodEffort": "Good effort! 💪",
+  "keepPracticing": "Keep practicing! 📚",
+  "speedModeDesc": "Answer as many flags as possible in 60 seconds!",
+  "speedModeHint": "4 choices · instant feedback · no waiting"
 }

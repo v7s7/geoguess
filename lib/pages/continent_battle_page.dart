@@ -82,13 +82,29 @@ class _ContinentBattlePageState extends State<ContinentBattlePage> {
     final newStars = accuracy >= 0.9 ? 3 : accuracy >= 0.7 ? 2 : accuracy >= 0.5 ? 1 : 0;
     final uid = context.read<AuthService>().uid;
     if (uid != null) {
-      await UserService().updateContinentStars(uid, info.region, newStars);
+      final userSvc = UserService();
+      await userSvc.updateContinentStars(uid, info.region, newStars);
+      if (newStars == 3) {
+        final achievementId = _continentAchievementId(info.region);
+        if (achievementId != null) {
+          await userSvc.unlockAchievement(uid, achievementId);
+        }
+      }
       if (mounted) {
         setState(() {
           final current = _stars[info.region] ?? 0;
           if (newStars > current) _stars = Map.from(_stars)..[info.region] = newStars;
         });
       }
+    }
+  }
+
+  String? _continentAchievementId(String region) {
+    switch (region) {
+      case 'Africa': return 'africa_expert';
+      case 'Europe': return 'europe_expert';
+      case 'Asia': return 'asia_expert';
+      default: return null;
     }
   }
 

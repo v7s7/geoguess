@@ -243,4 +243,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get oneTimePurchase => 'One-time purchase';
+
+  @override
+  String get timesUp => '⏱ Time\'s up!';
+
+  @override
+  String get playAgain => 'Play Again';
+
+  @override
+  String get correct => 'Correct';
+
+  @override
+  String get bestStreak => 'Best Streak';
+
+  @override
+  String get accuracy => 'Accuracy';
+
+  @override
+  String get outstanding => 'Outstanding! 🏆';
+
+  @override
+  String get greatJob => 'Great job! 🎉';
+
+  @override
+  String get goodEffort => 'Good effort! 💪';
+
+  @override
+  String get keepPracticing => 'Keep practicing! 📚';
+
+  @override
+  String get speedModeDesc => 'Answer as many flags as possible in 60 seconds!';
+
+  @override
+  String get speedModeHint => '4 choices · instant feedback · no waiting';
 }
