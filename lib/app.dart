@@ -112,18 +112,21 @@ class _StartupGateState extends State<_StartupGate> {
 
   Future<void> _initializeFirebase() async {
     setState(() => _status = 'Starting services…');
-
-    // Web cold-starts are slower — give Firebase more time to load its JS SDK.
-    final timeout = kIsWeb
-        ? const Duration(seconds: 20)
-        : const Duration(seconds: 10);
-
     startupLog('before Firebase init');
     try {
       if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        ).timeout(timeout);
+        // On web (including iOS Chrome/Safari), Firebase loads its JS SDK which
+        // can be slow on mobile networks — no timeout so we always wait for it.
+        // On native we apply a 10s safety cap.
+        if (kIsWeb) {
+          await Firebase.initializeApp(
+            options: DefaultFirebaseOptions.currentPlatform,
+          );
+        } else {
+          await Firebase.initializeApp(
+            options: DefaultFirebaseOptions.currentPlatform,
+          ).timeout(const Duration(seconds: 10));
+        }
       }
       startupLog('after Firebase init');
     } on TimeoutException {
