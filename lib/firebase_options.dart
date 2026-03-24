@@ -39,7 +39,9 @@ class DefaultFirebaseOptions {
     appId: '1:952231467952:web:9c881afb5625f25a3f1475',
     messagingSenderId: '952231467952',
     projectId: 'geo-guess-2001',
-    authDomain: 'geo-guess-2001.firebaseapp.com',
+    // Use the hosting domain (web.app) instead of firebaseapp.com so that
+    // iOS Safari/Chrome's ITP does not block the cross-site auth iframe.
+    authDomain: 'geo-guess-2001.web.app',
     storageBucket: 'geo-guess-2001.firebasestorage.app',
   );
 
