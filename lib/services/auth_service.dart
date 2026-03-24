@@ -32,6 +32,26 @@ class AuthService extends ChangeNotifier {
     startupLog('before auth/session restore');
     try {
       _auth = FirebaseAuth.instance;
+
+      // iOS Safari (and iOS Chrome, which also uses WebKit) restricts
+      // IndexedDB in Private Browsing — quota is 0 and writes throw
+      // QuotaExceededError.  Firebase Auth defaults to LOCAL persistence
+      // (IndexedDB), so we gracefully fall back: LOCAL → SESSION → NONE.
+      if (kIsWeb) {
+        try {
+          await _auth!.setPersistence(Persistence.LOCAL);
+        } catch (_) {
+          try {
+            await _auth!.setPersistence(Persistence.SESSION);
+            startupLog('auth: LOCAL persistence unavailable, using SESSION');
+          } catch (_) {
+            // In-memory only — user won't stay logged in across page loads,
+            // but auth calls will still work (e.g. iOS Private Browsing).
+            startupLog('auth: SESSION persistence unavailable, using NONE');
+          }
+        }
+      }
+
       _authSubscription = _auth!.authStateChanges().listen((_) => notifyListeners());
       _startupError = null;
       startupLog('after auth/session restore');
@@ -59,7 +79,12 @@ class AuthService extends ChangeNotifier {
     required String password,
     required String username,
   }) async {
-    if (_auth == null) return 'Authentication is currently unavailable.';
+    if (_auth == null) {
+      // Surface the real startup failure so it is visible on mobile where
+      // the browser console is not accessible.
+      final reason = _startupError ?? 'Firebase unavailable';
+      return 'Authentication unavailable. ($reason)';
+    }
     try {
       final cred = await _auth!.createUserWithEmailAndPassword(
         email: email.trim(),
@@ -82,9 +107,11 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
       return null; // null = success
     } on FirebaseAuthException catch (e) {
-      return _authError(e.code);
+      return _authError(e.code, e.message);
     } catch (e) {
-      return 'An error occurred. Please try again.';
+      // Non-Firebase exception (e.g. JS interop error on iOS WebKit).
+      // Return the raw message so it is visible on mobile without a console.
+      return 'Error: $e';
     }
   }
 
@@ -92,7 +119,10 @@ class AuthService extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
-    if (_auth == null) return 'Authentication is currently unavailable.';
+    if (_auth == null) {
+      final reason = _startupError ?? 'Firebase unavailable';
+      return 'Authentication unavailable. ($reason)';
+    }
     try {
       await _auth!.signInWithEmailAndPassword(
         email: email.trim(),
@@ -101,9 +131,9 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
       return null;
     } on FirebaseAuthException catch (e) {
-      return _authError(e.code);
+      return _authError(e.code, e.message);
     } catch (e) {
-      return 'An error occurred. Please try again.';
+      return 'Error: $e';
     }
   }
 
@@ -118,7 +148,7 @@ class AuthService extends ChangeNotifier {
     super.dispose();
   }
 
-  String _authError(String code) {
+  String _authError(String code, [String? message]) {
     switch (code) {
       case 'email-already-in-use':
         return 'This email is already registered. Please sign in instead.';
@@ -132,8 +162,17 @@ class AuthService extends ChangeNotifier {
         return 'Invalid email or password.';
       case 'too-many-requests':
         return 'Too many attempts. Please try again later.';
+      case 'network-request-failed':
+        // Common on iOS Safari when the device blocks cross-origin XHR to
+        // identitytoolkit.googleapis.com (content blockers, VPN, or poor
+        // network).  Surfacing this code helps distinguish it from other errors.
+        return 'Network error (auth/network-request-failed). '
+            'Check your connection and that no content blocker is active.';
       default:
-        return 'Authentication failed. Please try again.';
+        // Show the raw code so iOS-specific errors are visible on mobile
+        // without needing a console.  Can be replaced with a generic message
+        // once the root cause is identified.
+        return 'Authentication failed. (code: $code${message != null ? ', $message' : ''})';
     }
   }
 }

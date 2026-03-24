@@ -133,7 +133,9 @@ class _StartupGateState extends State<_StartupGate> {
       _startupWarning = 'Firebase startup timed out. Continuing without online services.';
       startupLog('Firebase init timed out; continuing without online services');
     } catch (e, stack) {
-      _startupWarning = 'Firebase startup failed. Continuing without online services.';
+      // Store the real exception so the auth UI can display it on mobile
+      // where console logs are not accessible (helps diagnose iOS-specific errors).
+      _startupWarning = 'Firebase init failed: $e';
       startupLog('Firebase init failed: $e');
       debugPrintStack(stackTrace: stack, label: '[GeoGuess][startup]');
     }
