@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'app.dart';
 import 'services/auth_service.dart';
+import 'services/purchase_service.dart';
 import 'startup_logger.dart';
 
 // ─── Global Error Handlers ───────────────────────────────────────────────────
@@ -54,6 +55,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => PurchaseService()),
       ],
       child: const GeoGuessApp(),
     ),
