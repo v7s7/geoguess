@@ -105,6 +105,9 @@ class _ContinentBattlePageState extends State<ContinentBattlePage> {
       case 'Africa': return 'africa_expert';
       case 'Europe': return 'europe_expert';
       case 'Asia': return 'asia_expert';
+      case 'Americas': return 'americas_expert';
+      case 'Oceania': return 'oceania_expert';
+      case 'Antarctic': return 'antarctic_expert';
       default: return null;
     }
   }
