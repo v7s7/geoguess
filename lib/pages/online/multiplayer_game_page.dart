@@ -11,6 +11,7 @@ import '../../services/sound_service.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/flag_box.dart';
+import 'multiplayer_lobby_page.dart';
 
 class MultiplayerGamePage extends StatefulWidget {
   final List<Country> countries;
@@ -40,6 +41,7 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
   int _myIndex = 0;
   bool _answered = false;
   bool _gameFinished = false;
+  bool _resultFinalized = false; // prevents double _finishGame calls
   Country? _selectedOption;
   bool? _lastCorrect;
 
@@ -48,18 +50,85 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
 
   Map<String, Country> _cca2Map = {};
 
+  // ── Timer (2 minutes for 20 flags) ───────────────────────────────────────────
+  static const _totalSeconds = 120;
+  Timer? _gameTimer;
+  int _secondsLeft = _totalSeconds;
+  bool _timerStarted = false;
+  bool _timedOut = false;
+
+  // ── Result screen state ───────────────────────────────────────────────────────
+  bool _showResult = false;
+  bool _iWon = false;
+  int _myFinalScore = 0;
+  int _oppFinalScore = 0;
+  String _myName = '';
+  String _oppName = '';
+
   @override
   void initState() {
     super.initState();
     _cca2Map = {for (final c in widget.countries) c.cca2: c};
     _roomSub = _service.watchRoom(widget.roomId).listen(_onRoomUpdate);
+    // Start timer immediately — both players start at roughly the same time
+    _startGameTimer();
   }
 
   @override
   void dispose() {
+    _gameTimer?.cancel();
     _roomSub?.cancel();
     super.dispose();
   }
+
+  // ── Timer ─────────────────────────────────────────────────────────────────────
+
+  void _startGameTimer() {
+    _timerStarted = true;
+    _gameTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      if (_secondsLeft > 0) {
+        setState(() => _secondsLeft--);
+      } else {
+        t.cancel();
+        _onTimerTimeout();
+      }
+    });
+  }
+
+  Future<void> _onTimerTimeout() async {
+    if (_timedOut || _resultFinalized) return;
+    _timedOut = true;
+    // Mark this player as finished with current score
+    setState(() => _gameFinished = true);
+    await _service.submitAnswer(
+      roomId: widget.roomId,
+      isPlayer1: widget.isPlayer1,
+      newScore: _myScore,
+      newIndex: _myIndex,
+      finished: true,
+    );
+    // Safety: if opponent hasn't finished in 20 s, force show result anyway
+    Future.delayed(const Duration(seconds: 20), () {
+      if (mounted && !_resultFinalized && _room != null) {
+        _finalizeResult(_room!);
+      }
+    });
+  }
+
+  String get _timerLabel {
+    final m = _secondsLeft ~/ 60;
+    final s = _secondsLeft % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  Color get _timerColor {
+    if (_secondsLeft > 60) return Colors.white;
+    if (_secondsLeft > 30) return Colors.amber;
+    return Colors.redAccent;
+  }
+
+  // ── Room updates ──────────────────────────────────────────────────────────────
 
   void _onRoomUpdate(GameRoom? room) {
     if (room == null || !mounted) return;
@@ -73,8 +142,9 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
         }
       }
     });
-    if (room.bothFinished && !_gameFinished) {
-      _finishGame(room);
+    if (room.bothFinished && !_resultFinalized) {
+      _gameTimer?.cancel();
+      _finalizeResult(room);
     }
   }
 
@@ -91,8 +161,10 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
     return _cca2Map[_room!.flagCodes[_myIndex]];
   }
 
+  // ── Answer logic ──────────────────────────────────────────────────────────────
+
   Future<void> _answer(Country selected) async {
-    if (_answered || _gameFinished) return;
+    if (_answered || _gameFinished || _timedOut) return;
     final correct = _myCurrentFlag;
     if (correct == null) return;
 
@@ -123,6 +195,7 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
     if (!mounted) return;
 
     if (finished) {
+      _gameTimer?.cancel();
       setState(() => _gameFinished = true);
     } else {
       final next = _cca2Map[_room!.flagCodes[newIndex]];
@@ -138,72 +211,60 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
     }
   }
 
-  void _finishGame(GameRoom room) async {
+  // ── Game completion ───────────────────────────────────────────────────────────
+
+  Future<void> _finalizeResult(GameRoom room) async {
+    if (_resultFinalized) return;
+    _resultFinalized = true;
+    _gameTimer?.cancel();
+
     final auth = context.read<AuthService>();
     final uid = auth.uid;
-    if (uid == null) return;
-
-    final myFinalScore = widget.isPlayer1 ? room.player1Score : room.player2Score;
+    final myName = widget.isPlayer1 ? room.player1Name : (room.player2Name ?? 'You');
+    final oppName = widget.isPlayer1 ? (room.player2Name ?? 'Opponent') : room.player1Name;
+    final myScore = widget.isPlayer1 ? room.player1Score : room.player2Score;
     final oppScore = widget.isPlayer1 ? room.player2Score : room.player1Score;
-    final won = myFinalScore > oppScore;
+    final won = myScore > oppScore;
 
-    await UserService().recordGameResult(uid: uid, score: myFinalScore, won: won);
-    if (won) {
-      await UserService().unlockAchievement(uid, 'multiplayer_win');
+    if (uid != null) {
+      await UserService().recordGameResult(uid: uid, score: myScore, won: won);
+      if (won) await UserService().unlockAchievement(uid, 'multiplayer_win');
     }
 
     if (mounted) {
-      _showResult(room, won);
+      setState(() {
+        _showResult = true;
+        _iWon = won;
+        _myFinalScore = myScore;
+        _oppFinalScore = oppScore;
+        _myName = myName;
+        _oppName = oppName;
+      });
+      if (won) _sound.playSuccess();
     }
   }
 
-  void _showResult(GameRoom room, bool won) {
-    final l10n = AppLocalizations.of(context)!;
-    final myName = widget.isPlayer1 ? room.player1Name : room.player2Name ?? l10n.youLabel;
-    final oppName = widget.isPlayer1 ? (room.player2Name ?? l10n.opponent) : room.player1Name;
-    final myScore = widget.isPlayer1 ? room.player1Score : room.player2Score;
-    final oppScore = widget.isPlayer1 ? room.player2Score : room.player1Score;
+  // ── Navigation ────────────────────────────────────────────────────────────────
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        contentPadding: const EdgeInsets.all(24),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(won ? l10n.youWon : l10n.youLost,
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _ScorePillar(name: myName, score: myScore, isMe: true, won: won),
-                Text('VS', style: TextStyle(fontSize: 16, color: Colors.grey.shade500, fontWeight: FontWeight.bold)),
-                _ScorePillar(name: oppName, score: oppScore, isMe: false, won: !won),
-              ],
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: FilledButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pop();
-                },
-                child: Text(l10n.backToHome),
-              ),
-            ),
-          ],
-        ),
+  void _goHome() {
+    Navigator.popUntil(context, (route) => route.isFirst);
+  }
+
+  void _rematch() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MultiplayerLobbyPage(countries: widget.countries),
       ),
     );
   }
 
+  // ── Build ─────────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
+    if (_showResult) return _buildResultScreen();
+
     final l10n = AppLocalizations.of(context)!;
     final opponentScore = widget.isPlayer1
         ? (_room?.player2Score ?? 0)
@@ -224,7 +285,7 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                 child: Column(
                   children: [
                     Row(
@@ -237,14 +298,8 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
                             isMe: true,
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text('VS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
-                        ),
+                        // Timer in center
+                        _TimerBadge(label: _timerLabel, color: _timerColor),
                         Expanded(
                           child: _PlayerScoreBox(
                             name: opponentName,
@@ -363,9 +418,163 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
         children: [
           const SizedBox(width: 48, height: 48, child: CircularProgressIndicator()),
           const SizedBox(height: 20),
-          Text(l10n.waitingForOpponentFinish, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(
+            _timedOut ? 'Time\'s up! Waiting for opponent...' : l10n.waitingForOpponentFinish,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 8),
           Text('${l10n.score}: $_myScore', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
+        ],
+      ),
+    );
+  }
+
+  // ── Result Screen ─────────────────────────────────────────────────────────────
+
+  Widget _buildResultScreen() {
+    final isDraw = _myFinalScore == _oppFinalScore;
+
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF1E1B4B), Color(0xFF312E81), Color(0xFFF0F4FF)],
+            stops: [0.0, 0.35, 0.6],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 32),
+
+              // Trophy / emoji
+              Text(
+                isDraw ? '🤝' : (_iWon ? '🏆' : '😔'),
+                style: const TextStyle(fontSize: 80),
+              ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
+
+              const SizedBox(height: 12),
+
+              Text(
+                isDraw ? 'It\'s a Draw!' : (_iWon ? 'You Won!' : 'You Lost!'),
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  color: isDraw ? Colors.amber : (_iWon ? Colors.greenAccent : Colors.redAccent),
+                ),
+              ).animate().fadeIn(delay: 200.ms),
+
+              const SizedBox(height: 32),
+
+              // Score comparison
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _ResultPillar(name: _myName, score: _myFinalScore, isWinner: _iWon || isDraw, isMe: true),
+                    Text('VS',
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(0.5),
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold)),
+                    _ResultPillar(name: _oppName, score: _oppFinalScore, isWinner: !_iWon || isDraw, isMe: false),
+                  ],
+                ),
+              ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1, end: 0),
+
+              if (_timedOut) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                  ),
+                  child: const Text(
+                    '⏱ Time ran out!',
+                    style: TextStyle(color: Colors.amber, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+
+              const Spacer(),
+
+              // Buttons
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      height: 54,
+                      child: ElevatedButton.icon(
+                        onPressed: _rematch,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4F46E5),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 0,
+                        ),
+                        icon: const Icon(Icons.replay_rounded),
+                        label: const Text('Rematch', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                      ),
+                    ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2, end: 0),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: OutlinedButton.icon(
+                        onPressed: _goHome,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white70,
+                          side: const BorderSide(color: Colors.white30),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        icon: const Icon(Icons.home_rounded),
+                        label: const Text('Go Home', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                      ),
+                    ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2, end: 0),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Widgets ───────────────────────────────────────────────────────────────────
+
+class _TimerBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _TimerBadge({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: color == Colors.redAccent
+            ? Colors.redAccent.withOpacity(0.25)
+            : Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.6), width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.timer_outlined, color: color, size: 14),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 15)),
         ],
       ),
     );
@@ -392,28 +601,41 @@ class _PlayerScoreBox extends StatelessWidget {
   }
 }
 
-class _ScorePillar extends StatelessWidget {
+class _ResultPillar extends StatelessWidget {
   final String name;
   final int score;
+  final bool isWinner;
   final bool isMe;
-  final bool won;
-  const _ScorePillar({required this.name, required this.score, required this.isMe, required this.won});
+  const _ResultPillar({required this.name, required this.score, required this.isWinner, required this.isMe});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        if (won) const Text('🏆', style: TextStyle(fontSize: 24)),
+        if (isWinner) const Text('🏆', style: TextStyle(fontSize: 26)),
         CircleAvatar(
-          radius: 28,
-          backgroundColor: isMe ? AppColors.primary : Colors.grey.shade300,
-          child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
-              style: TextStyle(color: isMe ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 20)),
+          radius: 30,
+          backgroundColor: isMe
+              ? AppColors.primary.withOpacity(0.4)
+              : Colors.white.withOpacity(0.15),
+          child: Text(
+            name.isNotEmpty ? name[0].toUpperCase() : '?',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22),
+          ),
         ),
         const SizedBox(height: 8),
-        Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-        Text('$score pts', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900,
-            color: won ? AppColors.success : AppColors.error)),
+        Text(name,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+            overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 4),
+        Text(
+          '$score pts',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            color: isWinner ? Colors.greenAccent : Colors.redAccent.shade100,
+          ),
+        ),
       ],
     );
   }

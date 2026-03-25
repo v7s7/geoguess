@@ -86,6 +86,12 @@ class AuthService extends ChangeNotifier {
       return 'Authentication unavailable. ($reason)';
     }
     try {
+      // Check username uniqueness before creating the Firebase Auth account.
+      final available = await UserService().isUsernameAvailable(username.trim());
+      if (!available) {
+        return 'This username is already taken. Please choose another.';
+      }
+
       final cred = await _auth!.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,

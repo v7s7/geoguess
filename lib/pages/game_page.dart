@@ -20,12 +20,15 @@ class GamePage extends StatefulWidget {
   final GameConfig config;
   /// Optional callback invoked with the final score and correct answer count when the game ends.
   final void Function(int score, int correctAnswers)? onFinished;
+  /// When set (e.g. 'Africa'), ResultPage shows continent star rating.
+  final String? continentName;
 
   const GamePage({
     super.key,
     required this.countries,
     required this.config,
     this.onFinished,
+    this.continentName,
   });
 
   @override
@@ -89,7 +92,7 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
       _questionIndex++;
 
       if (_currentRound == null) {
-        _finishGame();
+        _finishGame(); // async, fire-and-forget is fine here
       } else if (widget.config.timerSeconds != null) {
         _timeLeft = widget.config.timerSeconds!;
         _startTimer();
@@ -190,13 +193,23 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
     });
   }
 
-  void _finishGame() {
+  Future<void> _finishGame() async {
     final played = _questionIndex > _engine.totalQuestions
         ? _engine.totalQuestions
         : _questionIndex - 1;
     SoundService().playSuccess();
-    _recordGameAchievements(played);
+
+    // Calculate continent stars BEFORE async work, so we can pass to ResultPage
+    int? continentStars;
+    if (widget.continentName != null && played > 0) {
+      final accuracy = _correctCount / played;
+      continentStars = accuracy >= 0.9 ? 3 : accuracy >= 0.7 ? 2 : accuracy >= 0.5 ? 1 : 0;
+    }
+
+    final newAchievements = await _recordGameAchievements(played);
     widget.onFinished?.call(_score, _correctCount);
+
+    if (!mounted) return;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -206,49 +219,54 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
           playedQuestions: played,
           correctAnswers: _correctCount,
           maxStreak: _maxStreak,
+          newlyUnlockedAchievements: newAchievements,
+          continentName: widget.continentName,
+          continentEarnedStars: continentStars,
         ),
       ),
     );
   }
 
-  Future<void> _recordGameAchievements(int played) async {
+  /// Records game result and achievements, returns list of newly unlocked achievement IDs.
+  Future<List<String>> _recordGameAchievements(int played) async {
     final uid = context.read<AuthService>().uid;
-    if (uid == null) return;
+    if (uid == null) return [];
     final userSvc = UserService();
+    final unlocked = <String>[];
 
     await userSvc.recordGameResult(uid: uid, score: _score, won: false);
     final streak = await userSvc.updateStreak(uid);
 
-    await userSvc.unlockAchievement(uid, 'first_game');
+    Future<void> tryUnlock(String id) async {
+      if (await userSvc.unlockAchievement(uid, id)) unlocked.add(id);
+    }
+
+    await tryUnlock('first_game');
 
     // Perfect score
     final maxScore = played * Scoring.basePoints;
-    if (maxScore > 0 && _score >= maxScore) {
-      await userSvc.unlockAchievement(uid, 'perfect_score');
-    }
+    if (maxScore > 0 && _score >= maxScore) await tryUnlock('perfect_score');
 
     // Streak achievements
-    if (streak >= 3) await userSvc.unlockAchievement(uid, 'streak_3');
-    if (streak >= 7) await userSvc.unlockAchievement(uid, 'streak_7');
+    if (streak >= 3) await tryUnlock('streak_3');
+    if (streak >= 7) await tryUnlock('streak_7');
 
     // World master
     if (_engine.totalQuestions >= widget.countries.length && widget.countries.length > 200) {
-      await userSvc.unlockAchievement(uid, 'world_master');
+      await tryUnlock('world_master');
     }
 
-    // Quiz master: requires 50 games played total
+    // Quiz master: 50 games played
     final profile = await userSvc.getProfile(uid);
-    if ((profile?.gamesPlayed ?? 0) >= 50) {
-      await userSvc.unlockAchievement(uid, 'quiz_master');
-    }
+    if ((profile?.gamesPlayed ?? 0) >= 50) await tryUnlock('quiz_master');
 
-    // Review cleared: all mistakes corrected
+    // Review cleared
     if (widget.config.isReviewMode) {
       final mp = context.read<MistakesProvider>();
-      if (mp.mistakenCca2s.isEmpty) {
-        await userSvc.unlockAchievement(uid, 'review_cleared');
-      }
+      if (mp.mistakenCca2s.isEmpty) await tryUnlock('review_cleared');
     }
+
+    return unlocked;
   }
 
   Future<bool> _onWillPop() async {

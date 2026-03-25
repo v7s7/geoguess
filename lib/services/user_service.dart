@@ -7,6 +7,19 @@ class UserService {
   CollectionReference get _users => _db.collection('users');
   CollectionReference get _leaderboard => _db.collection('leaderboard');
 
+  // ── Username uniqueness ────────────────────────────────────────────────────────
+
+  /// Returns true if [username] has not been taken yet (case-insensitive).
+  Future<bool> isUsernameAvailable(String username) async {
+    final lower = username.trim().toLowerCase();
+    if (lower.isEmpty) return false;
+    final snap = await _users
+        .where('usernameLower', isEqualTo: lower)
+        .limit(1)
+        .get();
+    return snap.docs.isEmpty;
+  }
+
   // ── Create ──────────────────────────────────────────────────────────────────
 
   Future<void> createProfile({
@@ -15,6 +28,7 @@ class UserService {
     required String email,
   }) async {
     final data = UserProfile(uid: uid, username: username, email: email).toMap();
+    // toMap() already includes usernameLower via the model
     await _users.doc(uid).set(data);
     // Also create leaderboard entry
     await _leaderboard.doc(uid).set({

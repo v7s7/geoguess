@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:geoguess_flags/l10n/app_localizations.dart';
+import '../models/achievement.dart';
 import '../theme/app_theme.dart';
 
 class ResultPage extends StatelessWidget {
@@ -9,6 +10,9 @@ class ResultPage extends StatelessWidget {
   final int totalQuestions;
   final int correctAnswers;
   final int maxStreak;
+  final List<String> newlyUnlockedAchievements;
+  final String? continentName;
+  final int? continentEarnedStars;
 
   const ResultPage({
     super.key,
@@ -17,6 +21,9 @@ class ResultPage extends StatelessWidget {
     required this.playedQuestions,
     this.correctAnswers = 0,
     this.maxStreak = 0,
+    this.newlyUnlockedAchievements = const [],
+    this.continentName,
+    this.continentEarnedStars,
   });
 
   double get _accuracy =>
@@ -174,6 +181,23 @@ class ResultPage extends StatelessWidget {
                       // Accuracy bar
                       _AccuracyBar(accuracy: _accuracy, delay: 750),
 
+                      // ── Continent stars ───────────────────
+                      if (continentName != null && continentEarnedStars != null) ...[
+                        const SizedBox(height: 16),
+                        _ContinentStarsPanel(
+                          continentName: continentName!,
+                          stars: continentEarnedStars!,
+                          correct: correctAnswers,
+                          total: playedQuestions,
+                        ),
+                      ],
+
+                      // ── Newly unlocked achievements ───────
+                      if (newlyUnlockedAchievements.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        _UnlockedAchievementsPanel(ids: newlyUnlockedAchievements),
+                      ],
+
                       const Spacer(),
 
                       // ── Buttons ──────────────────────────
@@ -323,6 +347,150 @@ class _StatCard extends StatelessWidget {
           .fadeIn(delay: Duration(milliseconds: delay), duration: 350.ms)
           .slideY(begin: 0.2, end: 0),
     );
+  }
+}
+
+// ─── Continent Stars Panel ────────────────────────────────────────────────────
+
+class _ContinentStarsPanel extends StatelessWidget {
+  final String continentName;
+  final int stars;
+  final int correct;
+  final int total;
+  const _ContinentStarsPanel({
+    required this.continentName,
+    required this.stars,
+    required this.correct,
+    required this.total,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final label = stars == 3
+        ? 'Mastered! ✨'
+        : stars == 2
+            ? 'Good job!'
+            : stars == 1
+                ? 'Keep going!'
+                : 'Try again';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.amber.withOpacity(stars > 0 ? 0.5 : 0.2)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.map_rounded, color: AppColors.secondary, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                '$continentName Battle Result',
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+              ),
+              const Spacer(),
+              Text(
+                '$correct / $total flags',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ...List.generate(3, (i) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: Icon(
+                  i < stars ? Icons.star_rounded : Icons.star_outline_rounded,
+                  color: i < stars ? Colors.amber : Colors.grey.shade300,
+                  size: 32,
+                ).animate(delay: Duration(milliseconds: 900 + i * 150))
+                    .scale(duration: 400.ms, curve: Curves.elasticOut),
+              )),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(label, style: TextStyle(
+            color: stars > 0 ? Colors.amber.shade700 : Colors.grey,
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          )),
+        ],
+      ),
+    ).animate().fadeIn(delay: 800.ms);
+  }
+}
+
+// ─── Unlocked Achievements Panel ──────────────────────────────────────────────
+
+class _UnlockedAchievementsPanel extends StatelessWidget {
+  final List<String> ids;
+  const _UnlockedAchievementsPanel({required this.ids});
+
+  @override
+  Widget build(BuildContext context) {
+    final achievements = ids
+        .map(Achievements.findById)
+        .whereType<Achievement>()
+        .toList();
+    if (achievements.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF9E6),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.amber.withOpacity(0.4)),
+        boxShadow: [BoxShadow(color: Colors.amber.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Text('🏅', style: TextStyle(fontSize: 16)),
+              SizedBox(width: 6),
+              Text('Achievement${[1].length > 1 ? 's' : ''} Unlocked!',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF92400E))),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...achievements.asMap().entries.map((e) {
+            final a = e.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32, height: 32,
+                    decoration: BoxDecoration(
+                      color: a.color.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(a.icon, color: a.color, size: 18),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(a.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text(a.description, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                      ],
+                    ),
+                  ),
+                ],
+              ).animate(delay: Duration(milliseconds: 850 + e.key * 100)).fadeIn().slideX(begin: 0.1, end: 0),
+            );
+          }),
+        ],
+      ),
+    ).animate().fadeIn(delay: 800.ms);
   }
 }
 

@@ -69,7 +69,28 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
 
     if (_error != null) {
       return Scaffold(
-        body: Center(child: Text(l10n.error, style: const TextStyle(color: AppColors.error))),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.wifi_off_rounded, size: 48, color: AppColors.error),
+                const SizedBox(height: 16),
+                Text(l10n.error, style: const TextStyle(color: AppColors.error, fontSize: 16, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: () {
+                    setState(() { _error = null; _isLoading = true; });
+                    _loadData();
+                  },
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(l10n.retry),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
     }
 
