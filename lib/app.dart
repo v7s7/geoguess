@@ -14,8 +14,6 @@ import 'services/auth_service.dart';
 import 'services/mistakes_provider.dart';
 import 'startup_logger.dart';
 
-export 'theme/app_theme.dart' show ThemeProvider;
-
 // --- LocaleProvider ---
 class LocaleProvider extends ChangeNotifier {
   Locale _locale = const Locale('en');

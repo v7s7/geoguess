@@ -538,7 +538,7 @@ class _HomePageState extends State<HomePage> {
           ),
 
           // ── Daily Quests section ─────────────────────────────
-          if (context.read<AuthService>().isSignedIn)
+          if (auth.isSignedIn)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
