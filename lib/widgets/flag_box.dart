@@ -4,14 +4,15 @@ import 'package:flutter/material.dart';
 class FlagBox extends StatelessWidget {
   final String url;
   final double height;
+  final double? width;
 
-  const FlagBox({super.key, required this.url, this.height = 200});
+  const FlagBox({super.key, required this.url, this.height = 200, this.width});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: height,
-      width: double.infinity,
+      width: width ?? double.infinity,
       decoration: BoxDecoration(
         color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(12),

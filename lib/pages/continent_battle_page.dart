@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../models/country.dart';
+import '../models/daily_quest.dart';
 import '../models/game_config.dart';
 import '../services/auth_service.dart';
 import '../services/user_service.dart';
@@ -91,6 +92,7 @@ class _ContinentBattlePageState extends State<ContinentBattlePage> {
           await userSvc.unlockAchievement(uid, achievementId);
         }
       }
+      await userSvc.updateQuestProgress(uid, QuestType.continentBattle, 1);
       if (mounted) {
         setState(() {
           final current = _stars[info.region] ?? 0;

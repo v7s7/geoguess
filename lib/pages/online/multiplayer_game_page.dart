@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/country.dart';
+import '../../models/daily_quest.dart';
 import '../../services/auth_service.dart';
 import '../../services/multiplayer_service.dart';
 import '../../services/sound_service.dart';
@@ -227,8 +228,18 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
     final won = myScore > oppScore;
 
     if (uid != null) {
-      await UserService().recordGameResult(uid: uid, score: myScore, won: won);
-      if (won) await UserService().unlockAchievement(uid, 'multiplayer_win');
+      final userSvc = UserService();
+      await userSvc.recordGameResult(uid: uid, score: myScore, won: won);
+      if (won) await userSvc.unlockAchievement(uid, 'multiplayer_win');
+      // ELO update
+      final isDraw = myScore == oppScore;
+      await userSvc.updateElo(uid, won, isDraw);
+      // Quest updates
+      if (won) {
+        await userSvc.updateQuestProgress(uid, QuestType.winMultiplayer, 1);
+      } else {
+        await userSvc.updateQuestProgress(uid, QuestType.playGames, 1);
+      }
     }
 
     if (mounted) {

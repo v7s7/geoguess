@@ -888,34 +888,72 @@ class _TypeInput extends StatelessWidget {
   }
 }
 
-// ─── Wrong feedback banner ────────────────────────────────────────────────────
+// ─── Fact Card (shown on wrong answer / timeout) ──────────────────────────────
 
-class _WrongFeedback extends StatelessWidget {
-  final String message;
-  const _WrongFeedback({required this.message});
+class _FactCard extends StatelessWidget {
+  final Country country;
+  const _FactCard({required this.country});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.errorLight,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.error.withOpacity(0.3)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline_rounded, color: AppColors.error, size: 18),
-          const SizedBox(width: 10),
+          // Small flag thumbnail
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: FlagBox(url: country.flagUrl, height: 40, width: 60),
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: AppColors.error,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  country.localizedName(context),
+                  style: const TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.public_rounded, size: 13, color: AppColors.error),
+                    const SizedBox(width: 4),
+                    Text(
+                      country.localizedRegion(context),
+                      style: TextStyle(
+                        color: AppColors.error.withOpacity(0.8),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    const Icon(Icons.location_city_rounded, size: 13, color: AppColors.error),
+                    const SizedBox(width: 4),
+                    Text(
+                      country.capital,
+                      style: TextStyle(
+                        color: AppColors.error.withOpacity(0.8),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],

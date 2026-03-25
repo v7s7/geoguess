@@ -5,11 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
-import 'app.dart';
+import 'app.dart'; // also exports ThemeProvider, LocaleProvider
 import 'services/auth_service.dart';
 import 'services/purchase_service.dart';
 import 'startup_logger.dart';
-import 'theme/app_theme.dart';
 
 // ─── Global Error Handlers ───────────────────────────────────────────────────
 void _setupErrorHandlers() {

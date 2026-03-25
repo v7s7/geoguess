@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import '../models/elo_tier.dart';
 import '../services/auth_service.dart';
 import '../services/leaderboard_service.dart';
+import '../services/user_service.dart';
 import '../theme/app_theme.dart';
 
 class LeaderboardPage extends StatefulWidget {
@@ -12,25 +14,55 @@ class LeaderboardPage extends StatefulWidget {
   State<LeaderboardPage> createState() => _LeaderboardPageState();
 }
 
-class _LeaderboardPageState extends State<LeaderboardPage> {
+class _LeaderboardPageState extends State<LeaderboardPage>
+    with SingleTickerProviderStateMixin {
   final _service = LeaderboardService();
-  List<LeaderboardEntry> _entries = [];
+  late TabController _tabController;
+
+  List<LeaderboardEntry> _scoreEntries = [];
+  List<LeaderboardEntry> _eloEntries = [];
   int _myRank = 0;
+  int _myEloRank = 0;
+  int _myElo = 1000;
   bool _loading = true;
   String? _error;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
     try {
       final uid = context.read<AuthService>().uid;
-      final entries = await _service.getTopPlayers();
+      final scoreEntries = await _service.getTopPlayers();
+      final eloEntries = await _service.getTopPlayersByElo();
       final rank = uid != null ? await _service.getMyRank(uid) : 0;
-      if (mounted) setState(() { _entries = entries; _myRank = rank; _loading = false; });
+      final eloRank = uid != null ? await _service.getMyEloRank(uid) : 0;
+      // Get my ELO from profile
+      int myElo = 1000;
+      if (uid != null) {
+        final profile = await UserService().getProfile(uid);
+        myElo = profile?.eloRating ?? 1000;
+      }
+      if (mounted) {
+        setState(() {
+          _scoreEntries = scoreEntries;
+          _eloEntries = eloEntries;
+          _myRank = rank;
+          _myEloRank = eloRank;
+          _myElo = myElo;
+          _loading = false;
+        });
+      }
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
     }
@@ -51,7 +83,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 4, 16, 20),
+                padding: const EdgeInsets.fromLTRB(8, 4, 16, 0),
                 child: Column(
                   children: [
                     Row(
@@ -64,16 +96,51 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                           child: Text('🏆 Leaderboard',
                               style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                         ),
-                        if (_myRank > 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(20),
+                        // My rank badge
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (_myRank > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text('Rank #$_myRank',
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                              ),
+                            const SizedBox(height: 2),
+                            // ELO tier badge
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${EloTier.getLabel(_myElo)} · $_myElo ELO',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 11),
+                              ),
                             ),
-                            child: Text('Your rank: #$_myRank',
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                          ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Tab bar
+                    TabBar(
+                      controller: _tabController,
+                      indicator: BoxDecoration(
+                        color: Colors.white.withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      labelColor: Colors.white,
+                      unselectedLabelColor: Colors.white60,
+                      labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      tabs: const [
+                        Tab(text: 'Global Score'),
+                        Tab(text: 'ELO Rank'),
                       ],
                     ),
                   ],
@@ -82,35 +149,65 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
             ),
           ),
 
-          // Top 3 podium
-          if (_entries.length >= 3 && !_loading)
-            _buildPodium(),
-
-          // Full list
+          // Content
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
                     ? Center(child: Text('Failed to load: $_error'))
-                    : _entries.isEmpty
-                        ? const Center(child: Text('No players yet. Be the first!'))
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            itemCount: _entries.length,
-                            itemBuilder: (context, i) {
-                              final e = _entries[i];
-                              final isMe = e.uid == myUid;
-                              return _EntryTile(entry: e, isMe: isMe, delay: i * 30);
-                            },
-                          ),
+                    : TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildScoreTab(myUid),
+                          _buildEloTab(myUid),
+                        ],
+                      ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPodium() {
-    final top3 = _entries.take(3).toList();
+  Widget _buildScoreTab(String? myUid) {
+    if (_scoreEntries.isEmpty) {
+      return const Center(child: Text('No players yet. Be the first!'));
+    }
+    return Column(
+      children: [
+        if (_scoreEntries.length >= 3)
+          _buildPodium(_scoreEntries),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            itemCount: _scoreEntries.length,
+            itemBuilder: (context, i) {
+              final e = _scoreEntries[i];
+              final isMe = e.uid == myUid;
+              return _EntryTile(entry: e, isMe: isMe, delay: i * 30, showElo: false);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEloTab(String? myUid) {
+    if (_eloEntries.isEmpty) {
+      return const Center(child: Text('No ELO data yet.'));
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: _eloEntries.length,
+      itemBuilder: (context, i) {
+        final e = _eloEntries[i];
+        final isMe = e.uid == myUid;
+        return _EloEntryTile(entry: e, isMe: isMe, delay: i * 30);
+      },
+    );
+  }
+
+  Widget _buildPodium(List<LeaderboardEntry> entries) {
+    final top3 = entries.take(3).toList();
     return Container(
       color: AppColors.background,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -118,13 +215,10 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // 2nd
           _PodiumItem(entry: top3[1], rank: 2, height: 70),
           const SizedBox(width: 8),
-          // 1st
           _PodiumItem(entry: top3[0], rank: 1, height: 100),
           const SizedBox(width: 8),
-          // 3rd
           _PodiumItem(entry: top3[2], rank: 3, height: 55),
         ],
       ),
@@ -173,7 +267,8 @@ class _EntryTile extends StatelessWidget {
   final LeaderboardEntry entry;
   final bool isMe;
   final int delay;
-  const _EntryTile({required this.entry, required this.isMe, required this.delay});
+  final bool showElo;
+  const _EntryTile({required this.entry, required this.isMe, required this.delay, this.showElo = false});
 
   @override
   Widget build(BuildContext context) {
@@ -191,7 +286,6 @@ class _EntryTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Rank
           SizedBox(
             width: 32,
             child: Text(
@@ -203,7 +297,6 @@ class _EntryTile extends StatelessWidget {
               ),
             ),
           ),
-          // Avatar
           CircleAvatar(
             radius: 18,
             backgroundColor: isMe ? AppColors.primary : Colors.grey.shade200,
@@ -238,6 +331,92 @@ class _EntryTile extends StatelessWidget {
           Text(
             '${entry.totalScore}',
             style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.primary),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: Duration(milliseconds: delay), duration: 300.ms).slideX(begin: 0.1, end: 0);
+  }
+}
+
+class _EloEntryTile extends StatelessWidget {
+  final LeaderboardEntry entry;
+  final bool isMe;
+  final int delay;
+  const _EloEntryTile({required this.entry, required this.isMe, required this.delay});
+
+  @override
+  Widget build(BuildContext context) {
+    final tierLabel = EloTier.getLabel(entry.eloRating);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isMe ? AppColors.primary.withOpacity(0.08) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isMe ? AppColors.primary.withOpacity(0.4) : Colors.grey.shade200,
+          width: isMe ? 2 : 1,
+        ),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6)],
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 32,
+            child: Text(
+              '#${entry.rank}',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: entry.rank <= 3 ? Colors.amber.shade700 : Colors.grey,
+              ),
+            ),
+          ),
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: isMe ? AppColors.primary : Colors.grey.shade200,
+            child: Text(
+              entry.username.isNotEmpty ? entry.username[0].toUpperCase() : '?',
+              style: TextStyle(fontWeight: FontWeight.bold, color: isMe ? Colors.white : Colors.black87),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(entry.username, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    if (isMe) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
+                        child: const Text('You', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ],
+                ),
+                // Tier badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    tierLabel,
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.amber),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '${entry.eloRating}',
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.secondary),
           ),
         ],
       ),

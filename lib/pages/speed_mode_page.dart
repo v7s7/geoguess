@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:geoguess_flags/l10n/app_localizations.dart';
 import '../models/country.dart';
+import '../models/daily_quest.dart';
 import '../services/auth_service.dart';
 import '../services/sound_service.dart';
 import '../services/user_service.dart';
@@ -119,6 +120,7 @@ class _SpeedModePageState extends State<SpeedModePage>
       if (_correct >= 30) {
         await userSvc.unlockAchievement(uid, 'speed_demon');
       }
+      await userSvc.updateQuestProgress(uid, QuestType.speedMode, 1);
     }
   }
 

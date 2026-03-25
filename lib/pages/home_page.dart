@@ -5,11 +5,14 @@ import 'package:provider/provider.dart';
 import 'package:geoguess_flags/l10n/app_localizations.dart';
 import '../app.dart';
 import '../models/country.dart';
+import '../models/daily_quest.dart';
 import '../models/game_config.dart';
+import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/country_api.dart';
 import '../services/friends_service.dart';
 import '../services/mistakes_provider.dart';
+import '../services/user_service.dart';
 import '../theme/app_theme.dart';
 import 'play_setup_page.dart';
 import 'game_page.dart';
@@ -41,6 +44,11 @@ class _HomePageState extends State<HomePage> {
   String? _listeningUid;
   final Set<String> _shownChallengeIds = {};
 
+  // Daily quests
+  UserProfile? _userProfile;
+  StreamSubscription<UserProfile?>? _profileSub;
+  final List<DailyQuest> _todayQuests = QuestDefinitions.getForToday();
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +56,7 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AuthService>().addListener(_onAuthChanged);
       _setupChallengeListener();
+      _setupProfileListener();
     });
   }
 
@@ -55,10 +64,24 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     context.read<AuthService>().removeListener(_onAuthChanged);
     _challengeSub?.cancel();
+    _profileSub?.cancel();
     super.dispose();
   }
 
-  void _onAuthChanged() => _setupChallengeListener();
+  void _onAuthChanged() {
+    _setupChallengeListener();
+    _setupProfileListener();
+  }
+
+  void _setupProfileListener() {
+    if (!mounted) return;
+    final uid = context.read<AuthService>().uid;
+    if (uid == null) return;
+    _profileSub?.cancel();
+    _profileSub = UserService().watchProfile(uid).listen((p) {
+      if (mounted) setState(() => _userProfile = p);
+    });
+  }
 
   void _setupChallengeListener() {
     if (!mounted) return;
@@ -241,6 +264,28 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                           const Spacer(),
+                          // GeoCoins balance (shown when signed in)
+                          if (auth.isSignedIn && _userProfile != null) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text('🪙', style: TextStyle(fontSize: 12)),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    '${_userProfile!.geoCoins}',
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                          ],
                           // Language switcher
                           DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
@@ -491,6 +536,18 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
+
+          // ── Daily Quests section ─────────────────────────────
+          if (context.read<AuthService>().isSignedIn)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: _DailyQuestsCard(
+                  quests: _todayQuests,
+                  profile: _userProfile,
+                ),
+              ),
+            ),
 
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
@@ -749,6 +806,149 @@ class _ChallengeDialog extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── Daily Quests Card ────────────────────────────────────────────────────────
+
+class _DailyQuestsCard extends StatelessWidget {
+  final List<DailyQuest> quests;
+  final UserProfile? profile;
+
+  const _DailyQuestsCard({required this.quests, required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    final questProgress = profile?.questProgress ?? {};
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+            child: Row(
+              children: [
+                Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Center(child: Text('⚔️', style: TextStyle(fontSize: 16))),
+                ),
+                const SizedBox(width: 10),
+                const Text('Daily Quests', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text('Today', style: TextStyle(fontSize: 11, color: Color(0xFFF59E0B), fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // Quest items
+          ...quests.asMap().entries.map((e) {
+            final quest = e.value;
+            final progress = questProgress[quest.id] ?? 0;
+            final isCompleted = progress >= quest.target;
+            final pct = (progress / quest.target).clamp(0.0, 1.0);
+
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(quest.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                            Text(quest.description, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Coins reward
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: isCompleted
+                              ? AppColors.success.withOpacity(0.1)
+                              : const Color(0xFFF59E0B).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('🪙', style: TextStyle(fontSize: 10)),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${quest.rewardCoins}',
+                              style: TextStyle(
+                                color: isCompleted ? AppColors.success : const Color(0xFFF59E0B),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            ),
+                            if (isCompleted) ...[
+                              const SizedBox(width: 3),
+                              Icon(Icons.check_circle_rounded, color: AppColors.success, size: 12),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  // Progress bar
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: pct,
+                            backgroundColor: Colors.grey.shade200,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              isCompleted ? AppColors.success : AppColors.primary,
+                            ),
+                            minHeight: 6,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '$progress/${quest.target}',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                  if (e.key < quests.length - 1)
+                    const Padding(padding: EdgeInsets.only(top: 8), child: Divider(height: 1)),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 10),
+        ],
       ),
     );
   }
