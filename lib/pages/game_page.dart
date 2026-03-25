@@ -222,8 +222,8 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
           newlyUnlockedAchievements: newAchievements,
           continentName: widget.continentName,
           continentEarnedStars: continentStars,
-          onPlayAgain: () => Navigator.pushReplacement(
-            context,
+          onPlayAgain: (ctx) => Navigator.pushReplacement(
+            ctx,
             MaterialPageRoute(
               builder: (_) => GamePage(
                 countries: widget.countries,
@@ -254,9 +254,8 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
 
     await tryUnlock('first_game');
 
-    // Perfect score
-    final maxScore = played * Scoring.basePoints;
-    if (maxScore > 0 && _score >= maxScore) await tryUnlock('perfect_score');
+    // Perfect score — every question answered correctly
+    if (played > 0 && _correctCount == played) await tryUnlock('perfect_score');
 
     // Streak achievements
     if (streak >= 3) await tryUnlock('streak_3');
@@ -273,6 +272,7 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
 
     // Review cleared
     if (widget.config.isReviewMode) {
+      if (!mounted) return unlocked;
       final mp = context.read<MistakesProvider>();
       if (mp.mistakenCca2s.isEmpty) await tryUnlock('review_cleared');
     }

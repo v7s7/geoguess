@@ -110,10 +110,12 @@ class _SpeedModePageState extends State<SpeedModePage>
     setState(() => _finished = true);
     _sound.playSuccess();
 
+    if (!mounted) return;
     final uid = context.read<AuthService>().uid;
     if (uid != null) {
       final userSvc = UserService();
       await userSvc.updateSpeedScore(uid, _score);
+      if (!mounted) return;
       if (_correct >= 30) {
         await userSvc.unlockAchievement(uid, 'speed_demon');
       }

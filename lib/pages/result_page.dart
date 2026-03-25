@@ -13,7 +13,7 @@ class ResultPage extends StatelessWidget {
   final List<String> newlyUnlockedAchievements;
   final String? continentName;
   final int? continentEarnedStars;
-  final VoidCallback? onPlayAgain;
+  final void Function(BuildContext context)? onPlayAgain;
 
   const ResultPage({
     super.key,
@@ -253,7 +253,7 @@ class ResultPage extends StatelessWidget {
                         child: OutlinedButton.icon(
                           onPressed: () {
                             if (onPlayAgain != null) {
-                              onPlayAgain!();
+                              onPlayAgain!(context);
                             } else {
                               Navigator.of(context)
                                 ..pop()

@@ -88,12 +88,14 @@ class _HomePageState extends State<HomePage> {
     final service = FriendsService();
     if (accepted == true && mounted) {
       final auth = context.read<AuthService>();
+      final uid = auth.uid;
+      if (uid == null) return;
       try {
         final roomId = await service.acceptChallenge(
           challengeId: challenge.id,
           challengerUid: challenge.fromUid,
           challengerName: challenge.fromUsername,
-          acceptorUid: auth.uid!,
+          acceptorUid: uid,
           acceptorName: auth.displayName ?? 'Player',
           flagCodes: challenge.flagCodes,
         );
