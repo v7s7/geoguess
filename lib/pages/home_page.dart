@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +8,7 @@ import '../models/country.dart';
 import '../models/game_config.dart';
 import '../services/auth_service.dart';
 import '../services/country_api.dart';
+import '../services/friends_service.dart';
 import '../services/mistakes_provider.dart';
 import '../theme/app_theme.dart';
 import 'play_setup_page.dart';
@@ -19,6 +21,8 @@ import 'achievements_page.dart';
 import 'profile_page.dart';
 import 'auth/login_page.dart';
 import 'online/multiplayer_lobby_page.dart';
+import 'online/friends_page.dart';
+import 'online/multiplayer_game_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -32,10 +36,89 @@ class _HomePageState extends State<HomePage> {
   bool _isLoading = true;
   bool _loadFailed = false;
 
+  // Challenge listener
+  StreamSubscription<List<GameChallenge>>? _challengeSub;
+  String? _listeningUid;
+  final Set<String> _shownChallengeIds = {};
+
   @override
   void initState() {
     super.initState();
     _preloadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AuthService>().addListener(_onAuthChanged);
+      _setupChallengeListener();
+    });
+  }
+
+  @override
+  void dispose() {
+    context.read<AuthService>().removeListener(_onAuthChanged);
+    _challengeSub?.cancel();
+    super.dispose();
+  }
+
+  void _onAuthChanged() => _setupChallengeListener();
+
+  void _setupChallengeListener() {
+    if (!mounted) return;
+    final auth = context.read<AuthService>();
+    final uid = auth.uid;
+    if (uid == _listeningUid) return;
+    _challengeSub?.cancel();
+    _listeningUid = uid;
+    if (uid == null) return;
+    _challengeSub = FriendsService().watchIncomingChallenges(uid).listen((challenges) {
+      for (final c in challenges) {
+        if (_shownChallengeIds.contains(c.id)) continue;
+        _shownChallengeIds.add(c.id);
+        if (mounted) _showChallengeDialog(c);
+      }
+    });
+  }
+
+  Future<void> _showChallengeDialog(GameChallenge challenge) async {
+    if (!mounted) return;
+    final accepted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _ChallengeDialog(challengerName: challenge.fromUsername),
+    );
+
+    final service = FriendsService();
+    if (accepted == true && mounted) {
+      final auth = context.read<AuthService>();
+      try {
+        final roomId = await service.acceptChallenge(
+          challengeId: challenge.id,
+          challengerUid: challenge.fromUid,
+          challengerName: challenge.fromUsername,
+          acceptorUid: auth.uid!,
+          acceptorName: auth.displayName ?? 'Player',
+          flagCodes: challenge.flagCodes,
+        );
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => MultiplayerGamePage(
+                countries: _allCountries,
+                roomId: roomId,
+                isPlayer1: false,
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to start game: $e'), behavior: SnackBarBehavior.floating),
+          );
+        }
+      }
+    } else if (accepted == false) {
+      service.declineChallenge(challenge.id);
+    }
   }
 
   Future<void> _preloadData() async {
@@ -369,7 +452,7 @@ class _HomePageState extends State<HomePage> {
                       onTap: () => _requireAuth(context, () => const LeaderboardPage()),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _SocialButton(
                       icon: Icons.military_tech_rounded,
@@ -378,7 +461,19 @@ class _HomePageState extends State<HomePage> {
                       onTap: () => _requireAuth(context, () => const AchievementsPage()),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _SocialButton(
+                      icon: Icons.people_rounded,
+                      label: 'Friends',
+                      color: const Color(0xFFEC4899),
+                      onTap: () => _requireAuth(
+                        context,
+                        () => FriendsPage(countries: _allCountries),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _SocialButton(
                       icon: Icons.wifi_rounded,
@@ -566,6 +661,89 @@ class _SocialButton extends StatelessWidget {
                   color: Colors.black87,
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Challenge Dialog ─────────────────────────────────────────────────────────
+
+class _ChallengeDialog extends StatelessWidget {
+  final String challengerName;
+  const _ChallengeDialog({required this.challengerName});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: const Color(0xFF1E1B4B),
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72, height: 72,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
+                ),
+              ),
+              child: const Icon(Icons.sports_esports_rounded, color: Colors.white, size: 36),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Challenge!',
+              style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 8),
+            RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14, height: 1.5),
+                children: [
+                  TextSpan(
+                    text: challengerName,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                  const TextSpan(text: ' is challenging you to a 20-flag showdown!'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white60,
+                      side: const BorderSide(color: Colors.white24),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Decline', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4F46E5),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                    ),
+                    child: const Text('Accept!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

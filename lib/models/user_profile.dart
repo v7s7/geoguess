@@ -10,6 +10,7 @@ class UserProfile {
   final int speedHighScore;
   final List<String> achievements;
   final Map<String, int> continentStars; // {Africa: 3, Europe: 2, ...}
+  final List<Map<String, String>> friends; // [{uid, username}, ...]
 
   const UserProfile({
     required this.uid,
@@ -23,6 +24,7 @@ class UserProfile {
     this.speedHighScore = 0,
     this.achievements = const [],
     this.continentStars = const {},
+    this.friends = const [],
   });
 
   factory UserProfile.fromMap(String uid, Map<String, dynamic> data) {
@@ -38,11 +40,16 @@ class UserProfile {
       speedHighScore: (data['speedHighScore'] ?? 0) as int,
       achievements: List<String>.from(data['achievements'] ?? []),
       continentStars: Map<String, int>.from(data['continentStars'] ?? {}),
+      friends: (data['friends'] as List<dynamic>? ?? []).map((f) {
+        final m = f as Map<String, dynamic>;
+        return {'uid': m['uid'] as String, 'username': m['username'] as String};
+      }).toList(),
     );
   }
 
   Map<String, dynamic> toMap() => {
         'username': username,
+        'usernameLower': username.toLowerCase(),
         'email': email,
         'totalScore': totalScore,
         'gamesPlayed': gamesPlayed,
@@ -52,6 +59,7 @@ class UserProfile {
         'speedHighScore': speedHighScore,
         'achievements': achievements,
         'continentStars': continentStars,
+        'friends': friends,
       };
 
   UserProfile copyWith({
@@ -64,6 +72,7 @@ class UserProfile {
     int? speedHighScore,
     List<String>? achievements,
     Map<String, int>? continentStars,
+    List<Map<String, String>>? friends,
   }) =>
       UserProfile(
         uid: uid,
@@ -77,5 +86,6 @@ class UserProfile {
         speedHighScore: speedHighScore ?? this.speedHighScore,
         achievements: achievements ?? this.achievements,
         continentStars: continentStars ?? this.continentStars,
+        friends: friends ?? this.friends,
       );
 }

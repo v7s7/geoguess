@@ -7,6 +7,7 @@ import '../../models/country.dart';
 import '../../services/auth_service.dart';
 import '../../services/multiplayer_service.dart';
 import '../../theme/app_theme.dart';
+import 'friends_page.dart';
 import 'multiplayer_game_page.dart';
 
 class MultiplayerLobbyPage extends StatefulWidget {
@@ -201,6 +202,35 @@ class _MultiplayerLobbyPageState extends State<MultiplayerLobbyPage>
       ),
     ),
         ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0),
+
+        const SizedBox(height: 16),
+
+        // Challenge a friend
+        GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => FriendsPage(countries: widget.countries),
+            ),
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.3)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.people_rounded, color: Colors.white70, size: 22),
+                  SizedBox(width: 10),
+                  Text('Challenge a Friend', style: TextStyle(color: Colors.white70, fontSize: 17, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          ),
+        ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2, end: 0),
       ],
     );
   }

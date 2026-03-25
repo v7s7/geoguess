@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
+import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 
 class SignupPage extends StatefulWidget {
@@ -20,16 +22,50 @@ class _SignupPageState extends State<SignupPage> {
   bool _obscure = true;
   String? _error;
 
+  // Username availability state
+  bool _checkingUsername = false;
+  bool? _usernameAvailable; // null = not checked yet
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _usernameCtrl.addListener(_onUsernameChanged);
+  }
+
   @override
   void dispose() {
+    _debounce?.cancel();
+    _usernameCtrl.removeListener(_onUsernameChanged);
     _usernameCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
   }
 
+  void _onUsernameChanged() {
+    _debounce?.cancel();
+    final text = _usernameCtrl.text.trim();
+    if (text.length < 3) {
+      setState(() { _usernameAvailable = null; _checkingUsername = false; });
+      return;
+    }
+    setState(() { _checkingUsername = true; _usernameAvailable = null; });
+    _debounce = Timer(const Duration(milliseconds: 600), () async {
+      if (!mounted) return;
+      final available = await UserService().isUsernameAvailable(text);
+      if (mounted && _usernameCtrl.text.trim() == text) {
+        setState(() { _checkingUsername = false; _usernameAvailable = available; });
+      }
+    });
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_usernameAvailable == false) {
+      setState(() => _error = 'This username is already taken.');
+      return;
+    }
     setState(() { _loading = true; _error = null; });
 
     final err = await context.read<AuthService>().signUp(
@@ -40,7 +76,6 @@ class _SignupPageState extends State<SignupPage> {
 
     if (mounted) setState(() { _loading = false; _error = err; });
     if (err == null && mounted) {
-      // Pop both signup and login pages
       Navigator.of(context)
         ..pop()
         ..pop();
@@ -95,13 +130,41 @@ class _SignupPageState extends State<SignupPage> {
                         TextFormField(
                           controller: _usernameCtrl,
                           style: const TextStyle(color: Colors.white),
-                          decoration: _inputDeco('Username', Icons.badge_rounded),
+                          decoration: _inputDeco('Username', Icons.badge_rounded).copyWith(
+                            suffixIcon: _buildUsernameStatus(),
+                          ),
                           validator: (v) {
                             if ((v?.trim().length ?? 0) < 3) return 'Min 3 characters';
                             if ((v?.trim().length ?? 0) > 20) return 'Max 20 characters';
+                            if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(v?.trim() ?? '')) {
+                              return 'Letters, numbers, underscores only';
+                            }
                             return null;
                           },
                         ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0),
+
+                        // Username availability message
+                        if (_usernameAvailable != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6, left: 4),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _usernameAvailable! ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                                  size: 14,
+                                  color: _usernameAvailable! ? Colors.greenAccent : Colors.redAccent,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _usernameAvailable! ? 'Username available' : 'Username already taken',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: _usernameAvailable! ? Colors.greenAccent : Colors.redAccent,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
 
                         const SizedBox(height: 14),
 
@@ -155,14 +218,14 @@ class _SignupPageState extends State<SignupPage> {
                           width: double.infinity,
                           height: 56,
                           child: ElevatedButton(
-                            onPressed: _loading ? null : _submit,
+                            onPressed: (_loading || _checkingUsername) ? null : _submit,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.amber,
                               foregroundColor: Colors.black,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               elevation: 0,
                             ),
-                            child: _loading
+                            child: (_loading || _checkingUsername)
                                 ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
                                 : const Text('Create Account', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                           ),
@@ -177,6 +240,25 @@ class _SignupPageState extends State<SignupPage> {
         ),
       ),
     );
+  }
+
+  Widget? _buildUsernameStatus() {
+    if (_checkingUsername) {
+      return const Padding(
+        padding: EdgeInsets.all(14),
+        child: SizedBox(
+          width: 16, height: 16,
+          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
+        ),
+      );
+    }
+    if (_usernameAvailable == true) {
+      return const Icon(Icons.check_circle_rounded, color: Colors.greenAccent);
+    }
+    if (_usernameAvailable == false) {
+      return const Icon(Icons.cancel_rounded, color: Colors.redAccent);
+    }
+    return null;
   }
 
   InputDecoration _inputDeco(String label, IconData icon) => InputDecoration(
