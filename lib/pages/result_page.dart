@@ -13,6 +13,7 @@ class ResultPage extends StatelessWidget {
   final List<String> newlyUnlockedAchievements;
   final String? continentName;
   final int? continentEarnedStars;
+  final VoidCallback? onPlayAgain;
 
   const ResultPage({
     super.key,
@@ -24,6 +25,7 @@ class ResultPage extends StatelessWidget {
     this.newlyUnlockedAchievements = const [],
     this.continentName,
     this.continentEarnedStars,
+    this.onPlayAgain,
   });
 
   double get _accuracy =>
@@ -250,9 +252,13 @@ class ResultPage extends StatelessWidget {
                         height: 50,
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            Navigator.of(context)
-                              ..pop()
-                              ..pop();
+                            if (onPlayAgain != null) {
+                              onPlayAgain!();
+                            } else {
+                              Navigator.of(context)
+                                ..pop()
+                                ..pop();
+                            }
                           },
                           style: OutlinedButton.styleFrom(
                             shape: RoundedRectangleBorder(

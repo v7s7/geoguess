@@ -222,6 +222,17 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
           newlyUnlockedAchievements: newAchievements,
           continentName: widget.continentName,
           continentEarnedStars: continentStars,
+          onPlayAgain: () => Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => GamePage(
+                countries: widget.countries,
+                config: widget.config,
+                continentName: widget.continentName,
+                onFinished: widget.onFinished,
+              ),
+            ),
+          ),
         ),
       ),
     );
