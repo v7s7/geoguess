@@ -30,6 +30,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<Country> _allCountries = [];
   bool _isLoading = true;
+  bool _loadFailed = false;
 
   @override
   void initState() {
@@ -38,6 +39,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _preloadData() async {
+    setState(() { _isLoading = true; _loadFailed = false; });
     try {
       final countries = await CountryApi().fetchCountries();
       if (mounted) {
@@ -48,7 +50,7 @@ class _HomePageState extends State<HomePage> {
         _preloadFlags(countries);
       }
     } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() { _isLoading = false; _loadFailed = true; });
     }
   }
 
@@ -208,7 +210,7 @@ class _HomePageState extends State<HomePage> {
 
                       const SizedBox(height: 12),
                       Text(
-                        _isLoading ? '...' : l10n.whatCountry,
+                        _isLoading || _loadFailed ? '...' : l10n.whatCountry,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.75),
                           fontSize: 15,
@@ -230,7 +232,7 @@ class _HomePageState extends State<HomePage> {
                       // ── Big PLAY button ──────────────────────
                       _BigPlayButton(
                         label: l10n.play,
-                        enabled: !_isLoading,
+                        enabled: !_isLoading && !_loadFailed,
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const PlaySetupPage()),
@@ -266,7 +268,7 @@ class _HomePageState extends State<HomePage> {
                         icon: Icons.bolt_rounded,
                         label: l10n.speedMode,
                         color: const Color(0xFFEF4444),
-                        enabled: !_isLoading,
+                        enabled: !_isLoading && !_loadFailed,
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -279,7 +281,7 @@ class _HomePageState extends State<HomePage> {
                         icon: Icons.map_rounded,
                         label: l10n.battleMode,
                         color: AppColors.secondary,
-                        enabled: !_isLoading,
+                        enabled: !_isLoading && !_loadFailed,
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -292,7 +294,7 @@ class _HomePageState extends State<HomePage> {
                         icon: Icons.auto_stories_rounded,
                         label: l10n.learn,
                         color: AppColors.accent,
-                        enabled: !_isLoading,
+                        enabled: !_isLoading && !_loadFailed,
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -306,6 +308,40 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
+
+          // ── Retry banner (shown when countries failed to load) ──
+          if (_loadFailed)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.errorLight,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.wifi_off_rounded, color: AppColors.error, size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          l10n.error,
+                          style: const TextStyle(color: AppColors.error, fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: _preloadData,
+                        icon: const Icon(Icons.refresh_rounded, size: 16),
+                        label: Text(l10n.retry),
+                        style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
           // ── Review mistakes (if any) ─────────────────────────
           if (mp.hasMistakes && !_isLoading)
