@@ -22,6 +22,7 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
   int? _timerSeconds;
   bool _useRegionHint = false;
   bool _useCapitalHint = false;
+  Difficulty _difficulty = Difficulty.all;
 
   bool _isLoading = true;
   List<Country> _countries = [];
@@ -54,6 +55,7 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
       timerSeconds: _timerSeconds,
       showRegionHint: _useRegionHint,
       showCapitalHint: _useCapitalHint,
+      difficulty: _difficulty,
     );
     Navigator.pushReplacement(
       context,
@@ -179,6 +181,12 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
 
                   const SizedBox(height: 26),
 
+                  // 1b. Difficulty
+                  _Label('Difficulty'),
+                  _buildDifficultyCards(),
+
+                  const SizedBox(height: 26),
+
                   // 2. Questions
                   _Label(l10n.questionsCount),
                   _buildQuestionChips(l10n),
@@ -253,6 +261,71 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildDifficultyCards() {
+    const items = [
+      (Difficulty.easy,   Icons.sentiment_satisfied_alt_rounded, 'Easy',   Color(0xFF10B981), 'Well-known flags'),
+      (Difficulty.medium, Icons.sentiment_neutral_rounded,        'Medium', Color(0xFFF59E0B), 'Moderate challenge'),
+      (Difficulty.hard,   Icons.sentiment_very_dissatisfied_rounded, 'Hard', Color(0xFFEF4444), 'Obscure flags'),
+      (Difficulty.all,    Icons.public_rounded,                   'All',   Color(0xFF7C3AED), 'Every country'),
+    ];
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: items.map((item) {
+        final (diff, icon, label, color, subtitle) = item;
+        final selected = _difficulty == diff;
+        return GestureDetector(
+          onTap: () => setState(() => _difficulty = diff),
+          child: AnimatedContainer(
+            duration: 200.ms,
+            width: (MediaQuery.of(context).size.width - 60) / 2,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: selected ? color.withOpacity(0.1) : AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: selected ? color : Colors.grey.shade200,
+                width: selected ? 2 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 22, color: selected ? color : Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: selected ? color : Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    ).animate().fadeIn(delay: 75.ms).slideY(begin: 0.08, end: 0);
   }
 
   Widget _buildQuestionChips(AppLocalizations l10n) {

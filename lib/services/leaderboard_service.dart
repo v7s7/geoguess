@@ -6,6 +6,7 @@ class LeaderboardEntry {
   final int totalScore;
   final int gamesPlayed;
   final int gamesWon;
+  final int eloRating;
   int rank;
 
   LeaderboardEntry({
@@ -14,6 +15,7 @@ class LeaderboardEntry {
     required this.totalScore,
     required this.gamesPlayed,
     required this.gamesWon,
+    this.eloRating = 1000,
     this.rank = 0,
   });
 
@@ -24,6 +26,7 @@ class LeaderboardEntry {
         totalScore: (data['totalScore'] ?? 0) as int,
         gamesPlayed: (data['gamesPlayed'] ?? 0) as int,
         gamesWon: (data['gamesWon'] ?? 0) as int,
+        eloRating: (data['eloRating'] ?? 1000) as int,
       );
 }
 
@@ -47,6 +50,23 @@ class LeaderboardService {
     return entries;
   }
 
+  Future<List<LeaderboardEntry>> getTopPlayersByElo({int limit = 50}) async {
+    final snap = await _db
+        .collection('leaderboard')
+        .orderBy('eloRating', descending: true)
+        .limit(limit)
+        .get();
+
+    final entries = snap.docs
+        .map((d) => LeaderboardEntry.fromDoc(d.id, d.data()))
+        .toList();
+
+    for (int i = 0; i < entries.length; i++) {
+      entries[i].rank = i + 1;
+    }
+    return entries;
+  }
+
   Future<int> getMyRank(String uid) async {
     final myDoc = await _db.collection('leaderboard').doc(uid).get();
     if (!myDoc.exists) return 0;
@@ -55,6 +75,20 @@ class LeaderboardService {
     final above = await _db
         .collection('leaderboard')
         .where('totalScore', isGreaterThan: myScore)
+        .count()
+        .get();
+
+    return (above.count ?? 0) + 1;
+  }
+
+  Future<int> getMyEloRank(String uid) async {
+    final myDoc = await _db.collection('leaderboard').doc(uid).get();
+    if (!myDoc.exists) return 0;
+    final myElo = (myDoc.data()?['eloRating'] ?? 1000) as int;
+
+    final above = await _db
+        .collection('leaderboard')
+        .where('eloRating', isGreaterThan: myElo)
         .count()
         .get();
 

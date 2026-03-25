@@ -7,6 +7,7 @@ import '../game/rounds.dart';
 import '../game/scoring.dart';
 import '../models/country.dart';
 import '../models/game_config.dart';
+import '../models/daily_quest.dart';
 import '../services/auth_service.dart';
 import '../services/mistakes_provider.dart';
 import '../services/sound_service.dart';
@@ -247,6 +248,11 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
 
     await userSvc.recordGameResult(uid: uid, score: _score, won: false);
     final streak = await userSvc.updateStreak(uid);
+    // Quest updates
+    await userSvc.updateQuestProgress(uid, QuestType.playGames, 1);
+    if (_correctCount > 0) {
+      await userSvc.updateQuestProgress(uid, QuestType.correctAnswers, _correctCount);
+    }
 
     Future<void> tryUnlock(String id) async {
       if (await userSvc.unlockAchievement(uid, id)) unlocked.add(id);
@@ -531,10 +537,10 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
                         onTap: (opt) => _submitAnswer(selected: opt),
                       ),
 
-                    // ── Wrong answer feedback ──────────────
-                    if (_answered && _feedbackMessage != null) ...[
+                    // ── Wrong answer / timeout fact card ──
+                    if (_answered && (_feedbackMessage != null) && (!_isCorrect)) ...[
                       const SizedBox(height: 12),
-                      _WrongFeedback(message: _feedbackMessage!)
+                      _FactCard(country: _currentRound!.correctCountry)
                           .animate()
                           .fadeIn(duration: 300.ms)
                           .slideY(begin: 0.2, end: 0),

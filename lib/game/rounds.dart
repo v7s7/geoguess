@@ -1,6 +1,7 @@
 import 'dart:math';
 import '../models/country.dart';
 import '../models/game_config.dart';
+import '../models/country_difficulty.dart';
 
 class RoundData {
   final Country correctCountry;
@@ -13,12 +14,30 @@ class GameEngine {
   final List<Country> _allCountries;
   final GameConfig _config;
   final Random _rnd = Random();
-  
+
   List<Country> _shuffledPool = [];
   int _currentIndex = 0;
 
   GameEngine(this._allCountries, this._config) {
-    _shuffledPool = List.from(_allCountries)..shuffle(_rnd);
+    // Filter by difficulty before creating pool
+    List<Country> filtered;
+    switch (_config.difficulty) {
+      case Difficulty.easy:
+        filtered = _allCountries.where((c) => CountryDifficulty.isEasy(c.cca2)).toList();
+        break;
+      case Difficulty.medium:
+        filtered = _allCountries.where((c) => CountryDifficulty.isMedium(c.cca2)).toList();
+        break;
+      case Difficulty.hard:
+        filtered = _allCountries.where((c) => CountryDifficulty.isHard(c.cca2)).toList();
+        break;
+      case Difficulty.all:
+        filtered = _allCountries;
+        break;
+    }
+    // Fallback to all if filtered is empty
+    if (filtered.isEmpty) filtered = _allCountries;
+    _shuffledPool = List.from(filtered)..shuffle(_rnd);
     
     int limit = _config.questionCount;
     // Cap questions based on available pool
