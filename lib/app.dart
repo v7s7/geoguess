@@ -14,6 +14,8 @@ import 'services/auth_service.dart';
 import 'services/mistakes_provider.dart';
 import 'startup_logger.dart';
 
+export 'theme/app_theme.dart' show ThemeProvider;
+
 // --- LocaleProvider ---
 class LocaleProvider extends ChangeNotifier {
   Locale _locale = const Locale('en');
@@ -49,12 +51,14 @@ class GeoGuessApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => MistakesProvider(),
-      child: Consumer<LocaleProvider>(
-        builder: (context, localeProv, child) {
+      child: Consumer2<LocaleProvider, ThemeProvider>(
+        builder: (context, localeProv, themeProv, child) {
           return MaterialApp(
             title: 'GeoGuess Flags',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.themeData(localeProv.locale),
+            darkTheme: AppTheme.darkThemeData(localeProv.locale),
+            themeMode: themeProv.themeMode,
             locale: localeProv.locale,
             localizationsDelegates: const [
               AppLocalizations.delegate,

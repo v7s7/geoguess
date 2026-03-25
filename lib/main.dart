@@ -9,6 +9,7 @@ import 'app.dart';
 import 'services/auth_service.dart';
 import 'services/purchase_service.dart';
 import 'startup_logger.dart';
+import 'theme/app_theme.dart';
 
 // ─── Global Error Handlers ───────────────────────────────────────────────────
 void _setupErrorHandlers() {
@@ -54,6 +55,7 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => PurchaseService()),
       ],

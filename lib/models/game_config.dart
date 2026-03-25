@@ -1,5 +1,7 @@
 enum GameMode { practice, quiz }
 
+enum Difficulty { easy, medium, hard, all }
+
 class GameConfig {
   final GameMode mode;
   final int questionCount;
@@ -9,6 +11,7 @@ class GameConfig {
   // NEW FIELDS
   final bool showRegionHint;
   final bool showCapitalHint;
+  final Difficulty difficulty;
 
   GameConfig({
     required this.mode,
@@ -18,5 +21,6 @@ class GameConfig {
     this.isReviewMode = false,
     this.showRegionHint = false, // Default off
     this.showCapitalHint = false, // Default off
+    this.difficulty = Difficulty.all,
   });
 }
