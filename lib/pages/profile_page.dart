@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
@@ -19,20 +20,28 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _loading = true;
   bool _sound = true;
   bool _haptic = true;
+  StreamSubscription<UserProfile?>? _profileSub;
 
   @override
   void initState() {
     super.initState();
     _sound = SoundService().soundEnabled;
     _haptic = SoundService().hapticEnabled;
-    _load();
+    _startListening();
   }
 
-  Future<void> _load() async {
+  void _startListening() {
     final uid = context.read<AuthService>().uid;
     if (uid == null) { setState(() => _loading = false); return; }
-    final p = await UserService().getProfile(uid);
-    if (mounted) setState(() { _profile = p; _loading = false; });
+    _profileSub = UserService().watchProfile(uid).listen((p) {
+      if (mounted) setState(() { _profile = p; _loading = false; });
+    });
+  }
+
+  @override
+  void dispose() {
+    _profileSub?.cancel();
+    super.dispose();
   }
 
   @override

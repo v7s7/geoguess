@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
@@ -17,18 +18,50 @@ class AchievementsPage extends StatefulWidget {
 class _AchievementsPageState extends State<AchievementsPage> {
   UserProfile? _profile;
   bool _loading = true;
+  StreamSubscription<UserProfile?>? _profileSub;
+  Set<String> _previousUnlocked = {};
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _startListening();
   }
 
-  Future<void> _load() async {
+  void _startListening() {
     final uid = context.read<AuthService>().uid;
     if (uid == null) { setState(() => _loading = false); return; }
-    final p = await UserService().getProfile(uid);
-    if (mounted) setState(() { _profile = p; _loading = false; });
+    _profileSub = UserService().watchProfile(uid).listen((p) {
+      if (!mounted) return;
+      // Detect newly unlocked achievements to show a banner
+      if (p != null && _profile != null) {
+        final newOnes = p.achievements
+            .where((id) => !_previousUnlocked.contains(id))
+            .toList();
+        for (final id in newOnes) {
+          final a = Achievements.findById(id);
+          if (a != null) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Row(children: [
+                Icon(a.icon, color: a.color, size: 20),
+                const SizedBox(width: 10),
+                Text('Achievement Unlocked: ${a.title}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              ]),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFF1E1B4B),
+              duration: const Duration(seconds: 3),
+            ));
+          }
+        }
+      }
+      _previousUnlocked = Set<String>.from(p?.achievements ?? []);
+      setState(() { _profile = p; _loading = false; });
+    });
+  }
+
+  @override
+  void dispose() {
+    _profileSub?.cancel();
+    super.dispose();
   }
 
   @override
