@@ -54,15 +54,24 @@ class UserProfile {
       lastPlayedDate: data['lastPlayedDate'] as String?,
       speedHighScore: (data['speedHighScore'] ?? 0) as int,
       achievements: List<String>.from(data['achievements'] ?? []),
-      continentStars: Map<String, int>.from(data['continentStars'] ?? {}),
+      continentStars: {
+        for (final e in ((data['continentStars'] as Map<String, dynamic>?) ?? {}).entries)
+          e.key: (e.value as num).toInt()
+      },
       friends: (data['friends'] as List<dynamic>? ?? []).map((f) {
         final m = f as Map<String, dynamic>;
-        return {'uid': m['uid'] as String, 'username': m['username'] as String};
+        return {
+          'uid': (m['uid'] ?? '') as String,
+          'username': (m['username'] ?? '') as String,
+        };
       }).toList(),
       eloRating: (data['eloRating'] ?? 1000) as int,
       geoCoins: (data['geoCoins'] ?? 0) as int,
       lastQuestDate: data['lastQuestDate'] as String?,
-      questProgress: Map<String, int>.from(data['questProgress'] ?? {}),
+      questProgress: {
+        for (final e in ((data['questProgress'] as Map<String, dynamic>?) ?? {}).entries)
+          e.key: (e.value as num).toInt()
+      },
       ownedCosmetics: List<String>.from(data['ownedCosmetics'] ?? []),
       activeAvatarBorder: data['activeAvatarBorder'] as String?,
     );

@@ -119,6 +119,7 @@ class _SpeedModePageState extends State<SpeedModePage>
       if (!mounted) return;
       if (_correct >= 30) {
         await userSvc.unlockAchievement(uid, 'speed_demon');
+        if (!mounted) return;
       }
       await userSvc.updateQuestProgress(uid, QuestType.speedMode, 1);
     }

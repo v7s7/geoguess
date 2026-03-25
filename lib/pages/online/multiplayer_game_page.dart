@@ -234,11 +234,10 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
       // ELO update
       final isDraw = myScore == oppScore;
       await userSvc.updateElo(uid, won, isDraw);
-      // Quest updates
+      // Quest updates — always count the game, only count win when won
+      await userSvc.updateQuestProgress(uid, QuestType.playGames, 1);
       if (won) {
         await userSvc.updateQuestProgress(uid, QuestType.winMultiplayer, 1);
-      } else {
-        await userSvc.updateQuestProgress(uid, QuestType.playGames, 1);
       }
     }
 

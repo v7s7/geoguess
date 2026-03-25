@@ -246,7 +246,9 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
     final userSvc = UserService();
     final unlocked = <String>[];
 
-    await userSvc.recordGameResult(uid: uid, score: _score, won: false);
+    // Count as "won" if the player answered at least 60% correctly (2+ stars)
+    final won = played > 0 && (_correctCount / played) >= 0.6;
+    await userSvc.recordGameResult(uid: uid, score: _score, won: won);
     final streak = await userSvc.updateStreak(uid);
     // Quest updates
     await userSvc.updateQuestProgress(uid, QuestType.playGames, 1);

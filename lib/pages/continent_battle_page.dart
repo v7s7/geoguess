@@ -90,6 +90,7 @@ class _ContinentBattlePageState extends State<ContinentBattlePage> {
         final achievementId = _continentAchievementId(info.region);
         if (achievementId != null) {
           await userSvc.unlockAchievement(uid, achievementId);
+          if (!mounted) return;
         }
       }
       await userSvc.updateQuestProgress(uid, QuestType.continentBattle, 1);
