@@ -116,16 +116,55 @@ class _SpeedModePageState extends State<SpeedModePage>
     final uid = context.read<AuthService>().uid;
     if (uid != null) {
       final userSvc = UserService();
+
+      // Record score + win/loss (speed mode: win if >= 30 correct)
+      final won = _correct >= 30;
+      await userSvc.recordGameResult(uid: uid, score: _score, won: won);
+      if (!mounted) return;
+
+      // Update high score
       await userSvc.updateSpeedScore(uid, _score);
       if (!mounted) return;
-      if (_correct >= 30) {
-        await userSvc.unlockAchievement(uid, 'speed_demon');
+
+      // Update daily streak
+      final streak = await userSvc.updateStreak(uid);
+      if (!mounted) return;
+
+      // Achievements
+      if (won) await userSvc.unlockAchievement(uid, 'speed_demon');
+      if (!mounted) return;
+      if (streak >= 3) await userSvc.unlockAchievement(uid, 'streak_3');
+      if (!mounted) return;
+      if (streak >= 7) await userSvc.unlockAchievement(uid, 'streak_7');
+      if (!mounted) return;
+
+      final profile = await userSvc.getProfile(uid);
+      if (!mounted) return;
+      if ((profile?.gamesPlayed ?? 0) >= 50) {
+        await userSvc.unlockAchievement(uid, 'quiz_master');
         if (!mounted) return;
       }
-      final completed = await userSvc.updateQuestProgress(uid, QuestType.speedMode, 1);
-      if (completed.isNotEmpty && mounted) {
-        final todayQuests = QuestDefinitions.getForToday();
-        final doneQuests = todayQuests.where((q) => completed.contains(q.id)).toList();
+
+      // Quest progress — collect all completed quests then show popups once
+      final todayQuests = QuestDefinitions.getForToday();
+      final allCompleted = <String>{};
+
+      final playDone = await userSvc.updateQuestProgress(uid, QuestType.playGames, 1);
+      allCompleted.addAll(playDone);
+      if (!mounted) return;
+
+      final speedDone = await userSvc.updateQuestProgress(uid, QuestType.speedMode, 1);
+      allCompleted.addAll(speedDone);
+      if (!mounted) return;
+
+      if (_correct > 0) {
+        final answerDone = await userSvc.updateQuestProgress(uid, QuestType.correctAnswers, _correct);
+        allCompleted.addAll(answerDone);
+        if (!mounted) return;
+      }
+
+      if (allCompleted.isNotEmpty) {
+        final doneQuests = todayQuests.where((q) => allCompleted.contains(q.id)).toList();
         QuestPopup.showAll(context, doneQuests);
       }
     }
