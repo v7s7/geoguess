@@ -457,12 +457,12 @@ class _UnlockedAchievementsPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Text('🏅', style: TextStyle(fontSize: 16)),
-              SizedBox(width: 6),
-              Text('Achievement${[1].length > 1 ? 's' : ''} Unlocked!',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF92400E))),
+              const Text('🏅', style: TextStyle(fontSize: 16)),
+              const SizedBox(width: 6),
+              Text('Achievement${achievements.length > 1 ? 's' : ''} Unlocked!',
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF92400E))),
             ],
           ),
           const SizedBox(height: 10),
