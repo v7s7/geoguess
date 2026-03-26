@@ -5,11 +5,13 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:geoguess_flags/l10n/app_localizations.dart';
 import '../models/country.dart';
+import '../models/daily_quest.dart';
 import '../services/auth_service.dart';
 import '../services/sound_service.dart';
 import '../services/user_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/flag_box.dart';
+import '../widgets/quest_popup.dart';
 
 class SpeedModePage extends StatefulWidget {
   final List<Country> countries;
@@ -110,12 +112,21 @@ class _SpeedModePageState extends State<SpeedModePage>
     setState(() => _finished = true);
     _sound.playSuccess();
 
+    if (!mounted) return;
     final uid = context.read<AuthService>().uid;
     if (uid != null) {
       final userSvc = UserService();
       await userSvc.updateSpeedScore(uid, _score);
+      if (!mounted) return;
       if (_correct >= 30) {
         await userSvc.unlockAchievement(uid, 'speed_demon');
+        if (!mounted) return;
+      }
+      final completed = await userSvc.updateQuestProgress(uid, QuestType.speedMode, 1);
+      if (completed.isNotEmpty && mounted) {
+        final todayQuests = QuestDefinitions.getForToday();
+        final doneQuests = todayQuests.where((q) => completed.contains(q.id)).toList();
+        QuestPopup.showAll(context, doneQuests);
       }
     }
   }

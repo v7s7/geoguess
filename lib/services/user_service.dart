@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_profile.dart';
+import '../models/daily_quest.dart';
 
 class UserService {
   final _db = FirebaseFirestore.instance;
@@ -118,6 +119,10 @@ class UserService {
 
       tx.update(ref, {'streak': newStreak, 'lastPlayedDate': today});
     });
+
+    // Also reset quests if it's a new day
+    await resetQuestsIfNewDay(uid);
+
     return newStreak;
   }
 
@@ -172,6 +177,131 @@ class UserService {
       }
     });
     return unlocked;
+  }
+
+  // ── ELO ──────────────────────────────────────────────────────────────────────
+
+  /// Updates ELO rating: win+25, draw+5, loss-15, min 0.
+  Future<void> updateElo(String uid, bool won, bool isDraw) async {
+    final ref = _users.doc(uid);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final data = snap.data() as Map<String, dynamic>;
+      final current = (data['eloRating'] ?? 1000) as int;
+      int delta;
+      if (isDraw) {
+        delta = 5;
+      } else if (won) {
+        delta = 25;
+      } else {
+        delta = -15;
+      }
+      final newElo = (current + delta).clamp(0, 999999);
+      tx.update(ref, {'eloRating': newElo});
+      // Mirror to leaderboard
+      final lbRef = _leaderboard.doc(uid);
+      tx.set(lbRef, {'eloRating': newElo}, SetOptions(merge: true));
+    });
+  }
+
+  // ── GeoCoins ─────────────────────────────────────────────────────────────────
+
+  Future<void> addCoins(String uid, int amount) async {
+    final ref = _users.doc(uid);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final data = snap.data() as Map<String, dynamic>;
+      final current = (data['geoCoins'] ?? 0) as int;
+      tx.update(ref, {'geoCoins': current + amount});
+    });
+  }
+
+  // ── Daily Quests ─────────────────────────────────────────────────────────────
+
+  /// Returns list of newly completed quest IDs.
+  Future<List<String>> updateQuestProgress(String uid, QuestType type, int increment) async {
+    final todayQuests = QuestDefinitions.getForToday();
+    final matching = todayQuests.where((q) => q.type == type).toList();
+    if (matching.isEmpty) return [];
+
+    final List<String> completed = [];
+    final ref = _users.doc(uid);
+
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final data = snap.data() as Map<String, dynamic>;
+      final Map<String, dynamic> rawProgress =
+          Map<String, dynamic>.from(data['questProgress'] ?? {});
+      final Map<String, int> progress =
+          rawProgress.map((k, v) => MapEntry(k, (v as num).toInt()));
+
+      int coinsToAdd = 0;
+      for (final quest in matching) {
+        final prev = progress[quest.id] ?? 0;
+        final wasCompleted = prev >= quest.target;
+        if (wasCompleted) continue; // already completed
+
+        final newVal = (prev + increment).clamp(0, quest.target);
+        progress[quest.id] = newVal;
+        if (newVal >= quest.target) {
+          completed.add(quest.id);
+          coinsToAdd += quest.rewardCoins;
+        }
+      }
+
+      final currentCoins = (data['geoCoins'] ?? 0) as int;
+      tx.update(ref, {
+        'questProgress': progress,
+        if (coinsToAdd > 0) 'geoCoins': currentCoins + coinsToAdd,
+      });
+    });
+
+    return completed;
+  }
+
+  Future<void> resetQuestsIfNewDay(String uid) async {
+    final today = _todayStr();
+    final ref = _users.doc(uid);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final data = snap.data() as Map<String, dynamic>;
+      final lastQuestDate = data['lastQuestDate'] as String?;
+      if (lastQuestDate != today) {
+        tx.update(ref, {
+          'questProgress': {},
+          'lastQuestDate': today,
+        });
+      }
+    });
+  }
+
+  // ── Cosmetics ────────────────────────────────────────────────────────────────
+
+  /// Returns false if insufficient coins.
+  Future<bool> purchaseCosmetic(String uid, String itemId, int price) async {
+    bool success = false;
+    final ref = _users.doc(uid);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final data = snap.data() as Map<String, dynamic>;
+      final coins = (data['geoCoins'] ?? 0) as int;
+      if (coins < price) return;
+      final owned = List<String>.from(data['ownedCosmetics'] ?? []);
+      if (owned.contains(itemId)) { success = true; return; }
+      owned.add(itemId);
+      tx.update(ref, {'geoCoins': coins - price, 'ownedCosmetics': owned});
+      success = true;
+    });
+    return success;
+  }
+
+  Future<void> equipCosmetic(String uid, String itemId) async {
+    await _users.doc(uid).update({'activeAvatarBorder': itemId});
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────────

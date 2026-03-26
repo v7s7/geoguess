@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../models/country.dart';
+import '../models/daily_quest.dart';
 import '../models/game_config.dart';
 import '../services/auth_service.dart';
 import '../services/user_service.dart';
+import '../widgets/quest_popup.dart';
 import '../theme/app_theme.dart';
 import 'game_page.dart';
 
@@ -89,7 +91,14 @@ class _ContinentBattlePageState extends State<ContinentBattlePage> {
         final achievementId = _continentAchievementId(info.region);
         if (achievementId != null) {
           await userSvc.unlockAchievement(uid, achievementId);
+          if (!mounted) return;
         }
+      }
+      final completed = await userSvc.updateQuestProgress(uid, QuestType.continentBattle, 1);
+      if (completed.isNotEmpty && mounted) {
+        final todayQuests = QuestDefinitions.getForToday();
+        final doneQuests = todayQuests.where((q) => completed.contains(q.id)).toList();
+        QuestPopup.showAll(context, doneQuests);
       }
       if (mounted) {
         setState(() {
@@ -105,6 +114,9 @@ class _ContinentBattlePageState extends State<ContinentBattlePage> {
       case 'Africa': return 'africa_expert';
       case 'Europe': return 'europe_expert';
       case 'Asia': return 'asia_expert';
+      case 'Americas': return 'americas_expert';
+      case 'Oceania': return 'oceania_expert';
+      case 'Antarctic': return 'antarctic_expert';
       default: return null;
     }
   }

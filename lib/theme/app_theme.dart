@@ -1,5 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Persisted dark-mode toggle
+class ThemeProvider extends ChangeNotifier {
+  ThemeMode _themeMode = ThemeMode.light;
+
+  ThemeMode get themeMode => _themeMode;
+  bool get isDark => _themeMode == ThemeMode.dark;
+
+  ThemeProvider() {
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isDark = prefs.getBool('dark_mode') ?? false;
+    _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+  }
+
+  Future<void> setDark(bool value) async {
+    _themeMode = value ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('dark_mode', value);
+  }
+
+  static ThemeProvider of(BuildContext context) =>
+      Provider.of<ThemeProvider>(context, listen: false);
+}
 
 class AppColors {
   // Primary palette
@@ -43,6 +74,123 @@ class AppColors {
 }
 
 class AppTheme {
+  static ThemeData darkThemeData(Locale locale) {
+    final isArabic = locale.languageCode == 'ar';
+    final String? fontFamily =
+        isArabic ? GoogleFonts.cairo().fontFamily : GoogleFonts.poppins().fontFamily;
+    final TextTheme baseTextTheme =
+        isArabic ? GoogleFonts.cairoTextTheme() : GoogleFonts.poppinsTextTheme();
+
+    return ThemeData(
+      useMaterial3: true,
+      fontFamily: fontFamily,
+      brightness: Brightness.dark,
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xFF818CF8),
+        secondary: Color(0xFFA78BFA),
+        surface: Color(0xFF1E1B4B),
+        surfaceContainerHighest: Color(0xFF312E81),
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        error: Color(0xFFF87171),
+        onSurface: Color(0xFFE0E7FF),
+        onError: Colors.white,
+      ),
+      scaffoldBackgroundColor: const Color(0xFF0F172A),
+      textTheme: baseTextTheme.apply(
+        bodyColor: const Color(0xFFE0E7FF),
+        displayColor: const Color(0xFFE0E7FF),
+      ),
+      appBarTheme: AppBarTheme(
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: baseTextTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          fontFamily: fontFamily,
+          fontSize: 18,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        elevation: 0,
+        color: const Color(0xFF1E1B4B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        clipBehavior: Clip.antiAlias,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF818CF8),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 0,
+          textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: fontFamily),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFF818CF8),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          side: const BorderSide(color: Color(0xFF818CF8), width: 1.5),
+          textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: fontFamily),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF1E1B4B),
+          foregroundColor: const Color(0xFF818CF8),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          elevation: 0,
+          textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: fontFamily),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF1E1B4B),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFF3730A3)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFF3730A3)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFF818CF8), width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        labelStyle: TextStyle(fontFamily: fontFamily, color: const Color(0xFF94A3B8)),
+        hintStyle: TextStyle(fontFamily: fontFamily, color: const Color(0xFF64748B)),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return const Color(0xFF818CF8);
+          return Colors.white;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return const Color(0xFF818CF8).withOpacity(0.4);
+          return Colors.grey.shade700;
+        }),
+      ),
+      dividerTheme: const DividerThemeData(color: Color(0xFF1E293B), thickness: 1),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(color: Color(0xFF818CF8)),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: Color(0xFF818CF8),
+        foregroundColor: Colors.white,
+        elevation: 4,
+      ),
+    );
+  }
+
+  static ThemeData lightTheme(Locale locale) => themeData(locale);
+
   static ThemeData themeData(Locale locale) {
     final isArabic = locale.languageCode == 'ar';
 

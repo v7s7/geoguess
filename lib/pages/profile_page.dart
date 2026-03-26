@@ -2,11 +2,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import '../models/cosmetic_item.dart';
+import '../models/elo_tier.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/sound_service.dart';
 import '../services/user_service.dart';
 import '../theme/app_theme.dart';
+import 'shop_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -44,6 +47,36 @@ class _ProfilePageState extends State<ProfilePage> {
     super.dispose();
   }
 
+  Widget _buildAvatarWithBorder(UserProfile? profile) {
+    final borderId = profile?.activeAvatarBorder;
+    Color? borderColor;
+    if (borderId != null) {
+      try {
+        borderColor = CosmeticItem.all.firstWhere((c) => c.id == borderId).borderColor;
+      } catch (_) {}
+    }
+
+    final avatar = CircleAvatar(
+      radius: 40,
+      backgroundColor: Colors.white.withOpacity(0.2),
+      child: Text(
+        profile?.username.isNotEmpty == true ? profile!.username[0].toUpperCase() : '?',
+        style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+      ),
+    );
+
+    if (borderColor == null) return avatar;
+
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: borderColor, width: 4),
+        boxShadow: [BoxShadow(color: borderColor.withOpacity(0.5), blurRadius: 12, spreadRadius: 2)],
+      ),
+      child: avatar,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
@@ -71,16 +104,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 12),
                     // Avatar + name
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                      child: Text(
-                        _profile?.username.isNotEmpty == true
-                            ? _profile!.username[0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                    ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
+                    _buildAvatarWithBorder(_profile)
+                        .animate().scale(duration: 500.ms, curve: Curves.elasticOut),
                     const SizedBox(height: 10),
                     Text(
                       _profile?.username ?? auth.displayName ?? 'Player',
@@ -90,6 +115,40 @@ class _ProfilePageState extends State<ProfilePage> {
                       auth.currentUser?.email ?? '',
                       style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
                     ),
+                    const SizedBox(height: 8),
+                    // GeoCoins balance
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('🪙', style: TextStyle(fontSize: 14)),
+                          const SizedBox(width: 5),
+                          Text(
+                            '${_profile?.geoCoins ?? 0} coins',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // ELO Tier badge
+                    if (_profile != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${EloTier.getLabel(_profile!.eloRating)} · ${_profile!.eloRating} ELO',
+                          style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -131,7 +190,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         _SectionTitle('Settings'),
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
                           ),
@@ -166,11 +225,48 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                                 activeColor: AppColors.primary,
                               ),
+                              const Divider(height: 1, indent: 16),
+                              // Dark mode toggle
+                              Consumer<ThemeProvider>(
+                                builder: (ctx, themeProv, _) => SwitchListTile(
+                                  value: themeProv.isDark,
+                                  onChanged: (v) => themeProv.setDark(v),
+                                  title: const Text('Dark Mode', style: TextStyle(fontWeight: FontWeight.w600)),
+                                  secondary: Container(
+                                    width: 36, height: 36,
+                                    decoration: BoxDecoration(
+                                      color: Colors.indigo.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(Icons.dark_mode_rounded, color: Colors.indigo, size: 20),
+                                  ),
+                                  activeColor: AppColors.primary,
+                                ),
+                              ),
                             ],
                           ),
                         ),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
+
+                        // Shop button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton.icon(
+                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopPage())),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF7C3AED),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              elevation: 0,
+                            ),
+                            icon: const Text('🛍️', style: TextStyle(fontSize: 18)),
+                            label: const Text('Shop', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
 
                         // Sign out
                         SizedBox(
@@ -223,7 +319,7 @@ class _StatBox extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)],
         ),
@@ -232,7 +328,7 @@ class _StatBox extends StatelessWidget {
             Icon(icon, color: color, size: 22),
             const SizedBox(height: 6),
             Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-            Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade500), textAlign: TextAlign.center),
+            Text(label, style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.55)), textAlign: TextAlign.center),
           ],
         ),
       ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0),

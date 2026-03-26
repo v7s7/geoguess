@@ -276,4 +276,43 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get speedModeHint => '4 خيارات · تغذية راجعة فورية · بدون انتظار';
+
+  @override
+  String get dailyQuests => 'المهام اليومية';
+
+  @override
+  String get shop => 'المتجر';
+
+  @override
+  String get eloRank => 'تصنيف ELO';
+
+  @override
+  String get globalScore => 'النقاط العالمية';
+
+  @override
+  String get difficulty => 'الصعوبة';
+
+  @override
+  String get questComplete => 'اكتملت المهمة!';
+
+  @override
+  String get coinsEarned => 'عملة مكتسبة';
+
+  @override
+  String get darkMode => 'الوضع الداكن';
+
+  @override
+  String get profile => 'الملف الشخصي';
+
+  @override
+  String get today => 'اليوم';
+
+  @override
+  String get equipped => 'مجهز';
+
+  @override
+  String get notEnoughCoins => 'عملات غير كافية';
+
+  @override
+  String get eloTitle => 'تقييم ELO';
 }

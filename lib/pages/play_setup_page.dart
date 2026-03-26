@@ -22,6 +22,7 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
   int? _timerSeconds;
   bool _useRegionHint = false;
   bool _useCapitalHint = false;
+  Difficulty _difficulty = Difficulty.all;
 
   bool _isLoading = true;
   List<Country> _countries = [];
@@ -54,6 +55,7 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
       timerSeconds: _timerSeconds,
       showRegionHint: _useRegionHint,
       showCapitalHint: _useCapitalHint,
+      difficulty: _difficulty,
     );
     Navigator.pushReplacement(
       context,
@@ -179,6 +181,12 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
 
                   const SizedBox(height: 26),
 
+                  // 1b. Difficulty
+                  _Label('Difficulty'),
+                  _buildDifficultyCards(),
+
+                  const SizedBox(height: 26),
+
                   // 2. Questions
                   _Label(l10n.questionsCount),
                   _buildQuestionChips(l10n),
@@ -255,6 +263,71 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
     );
   }
 
+  Widget _buildDifficultyCards() {
+    const items = [
+      (Difficulty.easy,   Icons.sentiment_satisfied_alt_rounded, 'Easy',   Color(0xFF10B981), 'Well-known flags'),
+      (Difficulty.medium, Icons.sentiment_neutral_rounded,        'Medium', Color(0xFFF59E0B), 'Moderate challenge'),
+      (Difficulty.hard,   Icons.sentiment_very_dissatisfied_rounded, 'Hard', Color(0xFFEF4444), 'Obscure flags'),
+      (Difficulty.all,    Icons.public_rounded,                   'All',   Color(0xFF7C3AED), 'Every country'),
+    ];
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: items.map((item) {
+        final (diff, icon, label, color, subtitle) = item;
+        final selected = _difficulty == diff;
+        return GestureDetector(
+          onTap: () => setState(() => _difficulty = diff),
+          child: AnimatedContainer(
+            duration: 200.ms,
+            width: (MediaQuery.of(context).size.width - 60) / 2,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: selected ? color.withOpacity(0.1) : AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: selected ? color : Theme.of(context).colorScheme.outlineVariant,
+                width: selected ? 2 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 22, color: selected ? color : Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: selected ? color : Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.55)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    ).animate().fadeIn(delay: 75.ms).slideY(begin: 0.08, end: 0);
+  }
+
   Widget _buildQuestionChips(AppLocalizations l10n) {
     const counts = [5, 10, 20, 50, 100, 254];
     return Wrap(
@@ -271,7 +344,7 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
               color: isSelected ? AppColors.primary : AppColors.surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isSelected ? AppColors.primary : Colors.grey.shade200,
+                color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.outlineVariant,
               ),
               boxShadow: [
                 BoxShadow(
@@ -288,7 +361,7 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
-                color: isSelected ? Colors.white : Colors.black87,
+                color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
@@ -314,7 +387,7 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
               color: isSelected ? AppColors.accent : AppColors.surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isSelected ? AppColors.accent : Colors.grey.shade200,
+                color: isSelected ? AppColors.accent : Theme.of(context).colorScheme.outlineVariant,
               ),
               boxShadow: [
                 BoxShadow(
@@ -331,7 +404,7 @@ class _PlaySetupPageState extends State<PlaySetupPage> {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
-                color: isSelected ? Colors.white : Colors.black87,
+                color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
@@ -448,10 +521,10 @@ class _Label extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 10),
         child: Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       );
@@ -500,7 +573,7 @@ class _ModeCard extends StatelessWidget {
           color: selected ? color.withOpacity(0.08) : AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected ? color : Colors.grey.shade200,
+            color: selected ? color : Theme.of(context).colorScheme.outlineVariant,
             width: selected ? 2 : 1,
           ),
           boxShadow: [
@@ -521,11 +594,11 @@ class _ModeCard extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
-                color: selected ? color : Colors.black87,
+                color: selected ? color : Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 2),
-            Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+            Text(subtitle, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.55))),
           ],
         ),
       ),

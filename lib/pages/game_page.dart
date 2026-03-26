@@ -7,12 +7,14 @@ import '../game/rounds.dart';
 import '../game/scoring.dart';
 import '../models/country.dart';
 import '../models/game_config.dart';
+import '../models/daily_quest.dart';
 import '../services/auth_service.dart';
 import '../services/mistakes_provider.dart';
 import '../services/sound_service.dart';
 import '../services/user_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/flag_box.dart';
+import '../widgets/quest_popup.dart';
 import 'result_page.dart';
 
 class GamePage extends StatefulWidget {
@@ -222,6 +224,17 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
           newlyUnlockedAchievements: newAchievements,
           continentName: widget.continentName,
           continentEarnedStars: continentStars,
+          onPlayAgain: (ctx) => Navigator.pushReplacement(
+            ctx,
+            MaterialPageRoute(
+              builder: (_) => GamePage(
+                countries: widget.countries,
+                config: widget.config,
+                continentName: widget.continentName,
+                onFinished: widget.onFinished,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -234,8 +247,32 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
     final userSvc = UserService();
     final unlocked = <String>[];
 
-    await userSvc.recordGameResult(uid: uid, score: _score, won: false);
+    // Count as "won" if the player answered at least 60% correctly (2+ stars)
+    final won = played > 0 && (_correctCount / played) >= 0.6;
+    await userSvc.recordGameResult(uid: uid, score: _score, won: won);
     final streak = await userSvc.updateStreak(uid);
+    // Quest updates
+    final completedQuests = <DailyQuest>[];
+
+    final playCompleted = await userSvc.updateQuestProgress(uid, QuestType.playGames, 1);
+    if (playCompleted.isNotEmpty) {
+      final todayQuests = QuestDefinitions.getForToday();
+      completedQuests.addAll(
+        todayQuests.where((q) => playCompleted.contains(q.id)));
+    }
+    if (_correctCount > 0) {
+      final answerCompleted = await userSvc.updateQuestProgress(uid, QuestType.correctAnswers, _correctCount);
+      if (answerCompleted.isNotEmpty) {
+        final todayQuests = QuestDefinitions.getForToday();
+        completedQuests.addAll(
+          todayQuests.where((q) => answerCompleted.contains(q.id)));
+      }
+    }
+
+    // Show quest completion popups after all async work, before returning
+    if (completedQuests.isNotEmpty && mounted) {
+      QuestPopup.showAll(context, completedQuests);
+    }
 
     Future<void> tryUnlock(String id) async {
       if (await userSvc.unlockAchievement(uid, id)) unlocked.add(id);
@@ -243,9 +280,8 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
 
     await tryUnlock('first_game');
 
-    // Perfect score
-    final maxScore = played * Scoring.basePoints;
-    if (maxScore > 0 && _score >= maxScore) await tryUnlock('perfect_score');
+    // Perfect score — every question answered correctly
+    if (played > 0 && _correctCount == played) await tryUnlock('perfect_score');
 
     // Streak achievements
     if (streak >= 3) await tryUnlock('streak_3');
@@ -262,6 +298,7 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
 
     // Review cleared
     if (widget.config.isReviewMode) {
+      if (!mounted) return unlocked;
       final mp = context.read<MistakesProvider>();
       if (mp.mistakenCca2s.isEmpty) await tryUnlock('review_cleared');
     }
@@ -520,10 +557,10 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
                         onTap: (opt) => _submitAnswer(selected: opt),
                       ),
 
-                    // ── Wrong answer feedback ──────────────
-                    if (_answered && _feedbackMessage != null) ...[
+                    // ── Wrong answer / timeout fact card ──
+                    if (_answered && (_feedbackMessage != null) && (!_isCorrect)) ...[
                       const SizedBox(height: 12),
-                      _WrongFeedback(message: _feedbackMessage!)
+                      _FactCard(country: _currentRound!.correctCountry)
                           .animate()
                           .fadeIn(duration: 300.ms)
                           .slideY(begin: 0.2, end: 0),
@@ -871,34 +908,72 @@ class _TypeInput extends StatelessWidget {
   }
 }
 
-// ─── Wrong feedback banner ────────────────────────────────────────────────────
+// ─── Fact Card (shown on wrong answer / timeout) ──────────────────────────────
 
-class _WrongFeedback extends StatelessWidget {
-  final String message;
-  const _WrongFeedback({required this.message});
+class _FactCard extends StatelessWidget {
+  final Country country;
+  const _FactCard({required this.country});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.errorLight,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.error.withOpacity(0.3)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline_rounded, color: AppColors.error, size: 18),
-          const SizedBox(width: 10),
+          // Small flag thumbnail
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: FlagBox(url: country.flagUrl, height: 40, width: 60),
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: AppColors.error,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  country.localizedName(context),
+                  style: const TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.public_rounded, size: 13, color: AppColors.error),
+                    const SizedBox(width: 4),
+                    Text(
+                      country.localizedRegion(context),
+                      style: TextStyle(
+                        color: AppColors.error.withOpacity(0.8),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    const Icon(Icons.location_city_rounded, size: 13, color: AppColors.error),
+                    const SizedBox(width: 4),
+                    Text(
+                      country.capital,
+                      style: TextStyle(
+                        color: AppColors.error.withOpacity(0.8),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],

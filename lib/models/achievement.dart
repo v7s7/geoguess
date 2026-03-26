@@ -75,6 +75,27 @@ class Achievements {
       color: Color(0xFFEC4899),
     ),
     Achievement(
+      id: 'americas_expert',
+      title: 'Americas Expert',
+      description: 'Earn 3 stars on the Americas Continent Battle',
+      icon: Icons.landscape_rounded,
+      color: Color(0xFF3B82F6),
+    ),
+    Achievement(
+      id: 'oceania_expert',
+      title: 'Oceania Expert',
+      description: 'Earn 3 stars on the Oceania Continent Battle',
+      icon: Icons.waves_rounded,
+      color: Color(0xFF06B6D4),
+    ),
+    Achievement(
+      id: 'antarctic_expert',
+      title: 'Antarctic Expert',
+      description: 'Earn 3 stars on the Antarctic Continent Battle',
+      icon: Icons.ac_unit_rounded,
+      color: Color(0xFF64748B),
+    ),
+    Achievement(
       id: 'world_master',
       title: 'World Master',
       description: 'Complete the ALL flags quiz (254 countries)',

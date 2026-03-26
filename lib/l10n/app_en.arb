@@ -90,5 +90,18 @@
   "goodEffort": "Good effort! 💪",
   "keepPracticing": "Keep practicing! 📚",
   "speedModeDesc": "Answer as many flags as possible in 60 seconds!",
-  "speedModeHint": "4 choices · instant feedback · no waiting"
+  "speedModeHint": "4 choices · instant feedback · no waiting",
+  "dailyQuests": "Daily Quests",
+  "shop": "Shop",
+  "eloRank": "ELO Rank",
+  "globalScore": "Global Score",
+  "difficulty": "Difficulty",
+  "questComplete": "Quest Complete!",
+  "coinsEarned": "coins earned",
+  "darkMode": "Dark Mode",
+  "profile": "Profile",
+  "today": "Today",
+  "equipped": "Equipped",
+  "notEnoughCoins": "Not enough coins",
+  "eloTitle": "ELO Rating"
 }
