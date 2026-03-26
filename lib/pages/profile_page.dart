@@ -190,7 +190,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         _SectionTitle('Settings'),
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
                           ),
@@ -319,7 +319,7 @@ class _StatBox extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)],
         ),
@@ -328,7 +328,7 @@ class _StatBox extends StatelessWidget {
             Icon(icon, color: color, size: 22),
             const SizedBox(height: 6),
             Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-            Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade500), textAlign: TextAlign.center),
+            Text(label, style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.55)), textAlign: TextAlign.center),
           ],
         ),
       ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0),

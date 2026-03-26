@@ -14,6 +14,7 @@ import '../services/sound_service.dart';
 import '../services/user_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/flag_box.dart';
+import '../widgets/quest_popup.dart';
 import 'result_page.dart';
 
 class GamePage extends StatefulWidget {
@@ -251,9 +252,26 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
     await userSvc.recordGameResult(uid: uid, score: _score, won: won);
     final streak = await userSvc.updateStreak(uid);
     // Quest updates
-    await userSvc.updateQuestProgress(uid, QuestType.playGames, 1);
+    final completedQuests = <DailyQuest>[];
+
+    final playCompleted = await userSvc.updateQuestProgress(uid, QuestType.playGames, 1);
+    if (playCompleted.isNotEmpty) {
+      final todayQuests = QuestDefinitions.getForToday();
+      completedQuests.addAll(
+        todayQuests.where((q) => playCompleted.contains(q.id)));
+    }
     if (_correctCount > 0) {
-      await userSvc.updateQuestProgress(uid, QuestType.correctAnswers, _correctCount);
+      final answerCompleted = await userSvc.updateQuestProgress(uid, QuestType.correctAnswers, _correctCount);
+      if (answerCompleted.isNotEmpty) {
+        final todayQuests = QuestDefinitions.getForToday();
+        completedQuests.addAll(
+          todayQuests.where((q) => answerCompleted.contains(q.id)));
+      }
+    }
+
+    // Show quest completion popups after all async work, before returning
+    if (completedQuests.isNotEmpty && mounted) {
+      QuestPopup.showAll(context, completedQuests);
     }
 
     Future<void> tryUnlock(String id) async {

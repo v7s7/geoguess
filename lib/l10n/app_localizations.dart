@@ -631,6 +631,45 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'4 choices · instant feedback · no waiting'**
   String get speedModeHint;
+
+  /// No description provided for @dailyQuests.
+  String get dailyQuests;
+
+  /// No description provided for @shop.
+  String get shop;
+
+  /// No description provided for @eloRank.
+  String get eloRank;
+
+  /// No description provided for @globalScore.
+  String get globalScore;
+
+  /// No description provided for @difficulty.
+  String get difficulty;
+
+  /// No description provided for @questComplete.
+  String get questComplete;
+
+  /// No description provided for @coinsEarned.
+  String get coinsEarned;
+
+  /// No description provided for @darkMode.
+  String get darkMode;
+
+  /// No description provided for @profile.
+  String get profile;
+
+  /// No description provided for @today.
+  String get today;
+
+  /// No description provided for @equipped.
+  String get equipped;
+
+  /// No description provided for @notEnoughCoins.
+  String get notEnoughCoins;
+
+  /// No description provided for @eloTitle.
+  String get eloTitle;
 }
 
 class _AppLocalizationsDelegate

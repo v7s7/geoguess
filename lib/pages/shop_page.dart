@@ -207,14 +207,14 @@ class _ShopCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isEquipped
               ? item.borderColor
               : isOwned
                   ? item.borderColor.withOpacity(0.4)
-                  : Colors.grey.shade200,
+                  : Theme.of(context).colorScheme.outlineVariant,
           width: isEquipped ? 2.5 : 1.5,
         ),
         boxShadow: [
@@ -295,7 +295,7 @@ class _ShopCard extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: canAfford ? onBuy : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: canAfford ? const Color(0xFF7C3AED) : Colors.grey.shade300,
+                    backgroundColor: canAfford ? const Color(0xFF7C3AED) : Theme.of(context).colorScheme.outlineVariant,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 0,

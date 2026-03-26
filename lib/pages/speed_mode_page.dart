@@ -11,6 +11,7 @@ import '../services/sound_service.dart';
 import '../services/user_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/flag_box.dart';
+import '../widgets/quest_popup.dart';
 
 class SpeedModePage extends StatefulWidget {
   final List<Country> countries;
@@ -121,7 +122,12 @@ class _SpeedModePageState extends State<SpeedModePage>
         await userSvc.unlockAchievement(uid, 'speed_demon');
         if (!mounted) return;
       }
-      await userSvc.updateQuestProgress(uid, QuestType.speedMode, 1);
+      final completed = await userSvc.updateQuestProgress(uid, QuestType.speedMode, 1);
+      if (completed.isNotEmpty && mounted) {
+        final todayQuests = QuestDefinitions.getForToday();
+        final doneQuests = todayQuests.where((q) => completed.contains(q.id)).toList();
+        QuestPopup.showAll(context, doneQuests);
+      }
     }
   }
 

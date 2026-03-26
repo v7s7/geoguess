@@ -6,6 +6,7 @@ import '../models/daily_quest.dart';
 import '../models/game_config.dart';
 import '../services/auth_service.dart';
 import '../services/user_service.dart';
+import '../widgets/quest_popup.dart';
 import '../theme/app_theme.dart';
 import 'game_page.dart';
 
@@ -93,7 +94,12 @@ class _ContinentBattlePageState extends State<ContinentBattlePage> {
           if (!mounted) return;
         }
       }
-      await userSvc.updateQuestProgress(uid, QuestType.continentBattle, 1);
+      final completed = await userSvc.updateQuestProgress(uid, QuestType.continentBattle, 1);
+      if (completed.isNotEmpty && mounted) {
+        final todayQuests = QuestDefinitions.getForToday();
+        final doneQuests = todayQuests.where((q) => completed.contains(q.id)).toList();
+        QuestPopup.showAll(context, doneQuests);
+      }
       if (mounted) {
         setState(() {
           final current = _stars[info.region] ?? 0;

@@ -384,10 +384,10 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Text(
                     l10n.gameModes,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Colors.black54,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                       letterSpacing: 0.8,
                     ),
                   ),
@@ -825,7 +825,7 @@ class _DailyQuestsCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4)),
@@ -881,7 +881,7 @@ class _DailyQuestsCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(quest.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                            Text(quest.description, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                            Text(quest.description, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.55))),
                           ],
                         ),
                       ),
@@ -926,7 +926,7 @@ class _DailyQuestsCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
                             value: pct,
-                            backgroundColor: Colors.grey.shade200,
+                            backgroundColor: Theme.of(context).colorScheme.outlineVariant,
                             valueColor: AlwaysStoppedAnimation<Color>(
                               isCompleted ? AppColors.success : AppColors.primary,
                             ),
@@ -937,7 +937,7 @@ class _DailyQuestsCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         '$progress/${quest.target}',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                       ),
                     ],
                   ),

@@ -90,5 +90,19 @@
   "goodEffort": "جهد جيد! 💪",
   "keepPracticing": "استمر في التدريب! 📚",
   "speedModeDesc": "أجب على أكبر عدد من الأعلام في 60 ثانية!",
-  "speedModeHint": "4 خيارات · تغذية راجعة فورية · بدون انتظار"
+  "speedModeHint": "4 خيارات · تغذية راجعة فورية · بدون انتظار",
+
+  "dailyQuests": "المهام اليومية",
+  "shop": "المتجر",
+  "eloRank": "تصنيف ELO",
+  "globalScore": "النقاط العالمية",
+  "difficulty": "الصعوبة",
+  "questComplete": "اكتملت المهمة!",
+  "coinsEarned": "عملة مكتسبة",
+  "darkMode": "الوضع الداكن",
+  "profile": "الملف الشخصي",
+  "today": "اليوم",
+  "equipped": "مجهز",
+  "notEnoughCoins": "عملات غير كافية",
+  "eloTitle": "تقييم ELO"
 }

@@ -276,4 +276,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speedModeHint => '4 choices · instant feedback · no waiting';
+
+  @override
+  String get dailyQuests => 'Daily Quests';
+
+  @override
+  String get shop => 'Shop';
+
+  @override
+  String get eloRank => 'ELO Rank';
+
+  @override
+  String get globalScore => 'Global Score';
+
+  @override
+  String get difficulty => 'Difficulty';
+
+  @override
+  String get questComplete => 'Quest Complete!';
+
+  @override
+  String get coinsEarned => 'coins earned';
+
+  @override
+  String get darkMode => 'Dark Mode';
+
+  @override
+  String get profile => 'Profile';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get equipped => 'Equipped';
+
+  @override
+  String get notEnoughCoins => 'Not enough coins';
+
+  @override
+  String get eloTitle => 'ELO Rating';
 }

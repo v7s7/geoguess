@@ -209,7 +209,7 @@ class _LeaderboardPageState extends State<LeaderboardPage>
   Widget _buildPodium(List<LeaderboardEntry> entries) {
     final top3 = entries.take(3).toList();
     return Container(
-      color: AppColors.background,
+      color: Theme.of(context).scaffoldBackgroundColor,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -244,7 +244,7 @@ class _PodiumItem extends StatelessWidget {
           const SizedBox(height: 4),
           Text(entry.username, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 2),
-          Text('${entry.totalScore}', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+          Text('${entry.totalScore}', style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
           const SizedBox(height: 6),
           Container(
             height: height,
@@ -276,10 +276,10 @@ class _EntryTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: isMe ? AppColors.primary.withOpacity(0.08) : Colors.white,
+        color: isMe ? AppColors.primary.withOpacity(0.08) : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isMe ? AppColors.primary.withOpacity(0.4) : Colors.grey.shade200,
+          color: isMe ? AppColors.primary.withOpacity(0.4) : Theme.of(context).colorScheme.outlineVariant,
           width: isMe ? 2 : 1,
         ),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6)],
@@ -299,10 +299,10 @@ class _EntryTile extends StatelessWidget {
           ),
           CircleAvatar(
             radius: 18,
-            backgroundColor: isMe ? AppColors.primary : Colors.grey.shade200,
+            backgroundColor: isMe ? AppColors.primary : Theme.of(context).colorScheme.outlineVariant,
             child: Text(
               entry.username.isNotEmpty ? entry.username[0].toUpperCase() : '?',
-              style: TextStyle(fontWeight: FontWeight.bold, color: isMe ? Colors.white : Colors.black87),
+              style: TextStyle(fontWeight: FontWeight.bold, color: isMe ? Colors.white : Theme.of(context).colorScheme.onSurface),
             ),
           ),
           const SizedBox(width: 12),
@@ -324,7 +324,7 @@ class _EntryTile extends StatelessWidget {
                   ],
                 ),
                 Text('${entry.gamesPlayed} games · ${entry.gamesWon} wins',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                    style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.55))),
               ],
             ),
           ),
@@ -352,10 +352,10 @@ class _EloEntryTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: isMe ? AppColors.primary.withOpacity(0.08) : Colors.white,
+        color: isMe ? AppColors.primary.withOpacity(0.08) : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isMe ? AppColors.primary.withOpacity(0.4) : Colors.grey.shade200,
+          color: isMe ? AppColors.primary.withOpacity(0.4) : Theme.of(context).colorScheme.outlineVariant,
           width: isMe ? 2 : 1,
         ),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6)],
@@ -375,10 +375,10 @@ class _EloEntryTile extends StatelessWidget {
           ),
           CircleAvatar(
             radius: 18,
-            backgroundColor: isMe ? AppColors.primary : Colors.grey.shade200,
+            backgroundColor: isMe ? AppColors.primary : Theme.of(context).colorScheme.outlineVariant,
             child: Text(
               entry.username.isNotEmpty ? entry.username[0].toUpperCase() : '?',
-              style: TextStyle(fontWeight: FontWeight.bold, color: isMe ? Colors.white : Colors.black87),
+              style: TextStyle(fontWeight: FontWeight.bold, color: isMe ? Colors.white : Theme.of(context).colorScheme.onSurface),
             ),
           ),
           const SizedBox(width: 12),

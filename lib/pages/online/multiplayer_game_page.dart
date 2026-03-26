@@ -12,6 +12,7 @@ import '../../services/sound_service.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/flag_box.dart';
+import '../../widgets/quest_popup.dart';
 import 'multiplayer_lobby_page.dart';
 
 class MultiplayerGamePage extends StatefulWidget {
@@ -235,9 +236,19 @@ class _MultiplayerGamePageState extends State<MultiplayerGamePage> {
       final isDraw = myScore == oppScore;
       await userSvc.updateElo(uid, won, isDraw);
       // Quest updates — always count the game, only count win when won
-      await userSvc.updateQuestProgress(uid, QuestType.playGames, 1);
+      final completedQuests = <DailyQuest>[];
+      final todayQuests = QuestDefinitions.getForToday();
+
+      final playDone = await userSvc.updateQuestProgress(uid, QuestType.playGames, 1);
+      completedQuests.addAll(todayQuests.where((q) => playDone.contains(q.id)));
+
       if (won) {
-        await userSvc.updateQuestProgress(uid, QuestType.winMultiplayer, 1);
+        final winDone = await userSvc.updateQuestProgress(uid, QuestType.winMultiplayer, 1);
+        completedQuests.addAll(todayQuests.where((q) => winDone.contains(q.id)));
+      }
+
+      if (completedQuests.isNotEmpty && mounted) {
+        QuestPopup.showAll(context, completedQuests);
       }
     }
 
