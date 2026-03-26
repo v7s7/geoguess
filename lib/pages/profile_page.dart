@@ -36,9 +36,10 @@ class _ProfilePageState extends State<ProfilePage> {
   void _startListening() {
     final uid = context.read<AuthService>().uid;
     if (uid == null) { setState(() => _loading = false); return; }
-    _profileSub = UserService().watchProfile(uid).listen((p) {
-      if (mounted) setState(() { _profile = p; _loading = false; });
-    });
+    _profileSub = UserService().watchProfile(uid).listen(
+      (p) { if (mounted) setState(() { _profile = p; _loading = false; }); },
+      onError: (_) { if (mounted) setState(() => _loading = false); },
+    );
   }
 
   @override
