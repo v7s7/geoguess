@@ -86,7 +86,21 @@ class _ContinentBattlePageState extends State<ContinentBattlePage> {
     final uid = context.read<AuthService>().uid;
     if (uid != null) {
       final userSvc = UserService();
+
+      // Record game result (win = 2+ stars)
+      final won = newStars >= 2;
+      await userSvc.recordGameResult(uid: uid, score: correctAnswers * 100, won: won);
+      if (!mounted) return;
+
+      // Update streak
+      final streak = await userSvc.updateStreak(uid);
+      if (!mounted) return;
+
+      // Save continent star progress
       await userSvc.updateContinentStars(uid, info.region, newStars);
+      if (!mounted) return;
+
+      // Continent mastery + streak achievements
       if (newStars == 3) {
         final achievementId = _continentAchievementId(info.region);
         if (achievementId != null) {
@@ -94,18 +108,46 @@ class _ContinentBattlePageState extends State<ContinentBattlePage> {
           if (!mounted) return;
         }
       }
-      final completed = await userSvc.updateQuestProgress(uid, QuestType.continentBattle, 1);
-      if (completed.isNotEmpty && mounted) {
-        final todayQuests = QuestDefinitions.getForToday();
-        final doneQuests = todayQuests.where((q) => completed.contains(q.id)).toList();
+      if (streak >= 3) await userSvc.unlockAchievement(uid, 'streak_3');
+      if (!mounted) return;
+      if (streak >= 7) await userSvc.unlockAchievement(uid, 'streak_7');
+      if (!mounted) return;
+
+      final profile = await userSvc.getProfile(uid);
+      if (!mounted) return;
+      if ((profile?.gamesPlayed ?? 0) >= 50) {
+        await userSvc.unlockAchievement(uid, 'quiz_master');
+        if (!mounted) return;
+      }
+
+      // Quest progress — collect all then show popups once
+      final todayQuests = QuestDefinitions.getForToday();
+      final allCompleted = <String>{};
+
+      final playDone = await userSvc.updateQuestProgress(uid, QuestType.playGames, 1);
+      allCompleted.addAll(playDone);
+      if (!mounted) return;
+
+      final battleDone = await userSvc.updateQuestProgress(uid, QuestType.continentBattle, 1);
+      allCompleted.addAll(battleDone);
+      if (!mounted) return;
+
+      if (correctAnswers > 0) {
+        final answerDone = await userSvc.updateQuestProgress(uid, QuestType.correctAnswers, correctAnswers);
+        allCompleted.addAll(answerDone);
+        if (!mounted) return;
+      }
+
+      if (allCompleted.isNotEmpty) {
+        final doneQuests = todayQuests.where((q) => allCompleted.contains(q.id)).toList();
         QuestPopup.showAll(context, doneQuests);
       }
-      if (mounted) {
-        setState(() {
-          final current = _stars[info.region] ?? 0;
-          if (newStars > current) _stars = Map.from(_stars)..[info.region] = newStars;
-        });
-      }
+
+      // Update local star display
+      setState(() {
+        final current = _stars[info.region] ?? 0;
+        if (newStars > current) _stars = Map.from(_stars)..[info.region] = newStars;
+      });
     }
   }
 
