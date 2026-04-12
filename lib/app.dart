@@ -180,15 +180,16 @@ class _StartupScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFF4F46E5),
+    // NOTE: do NOT mark Scaffold const — status must render dynamically.
+    return Scaffold(
+      backgroundColor: const Color(0xFF4F46E5),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('🚩', style: TextStyle(fontSize: 52)),
-            SizedBox(height: 20),
-            Text(
+            const Text('🚩', style: TextStyle(fontSize: 52)),
+            const SizedBox(height: 20),
+            const Text(
               'GeoGuess Flags',
               style: TextStyle(
                 color: Colors.white,
@@ -196,8 +197,13 @@ class _StartupScreen extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 20),
-            CircularProgressIndicator(color: Colors.white),
+            const SizedBox(height: 8),
+            Text(
+              status,
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+            const SizedBox(height: 20),
+            const CircularProgressIndicator(color: Colors.white),
           ],
         ),
       ),

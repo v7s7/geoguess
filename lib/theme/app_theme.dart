@@ -74,12 +74,34 @@ class AppColors {
 }
 
 class AppTheme {
+  // Safe wrappers — google_fonts downloads fonts from the network on first
+  // launch on iOS. If the download fails (no connectivity, ATS block, etc.)
+  // it can return a null fontFamily and leave the theme partially broken.
+  // We fall back to the platform system-UI font so the app always renders.
+  static String? _safeFontFamily(bool isArabic) {
+    try {
+      return isArabic
+          ? GoogleFonts.cairo().fontFamily
+          : GoogleFonts.poppins().fontFamily;
+    } catch (_) {
+      return null; // Flutter will use the system default
+    }
+  }
+
+  static TextTheme _safeTextTheme(bool isArabic) {
+    try {
+      return isArabic
+          ? GoogleFonts.cairoTextTheme()
+          : GoogleFonts.poppinsTextTheme();
+    } catch (_) {
+      return Typography.material2021().black; // safe fallback
+    }
+  }
+
   static ThemeData darkThemeData(Locale locale) {
     final isArabic = locale.languageCode == 'ar';
-    final String? fontFamily =
-        isArabic ? GoogleFonts.cairo().fontFamily : GoogleFonts.poppins().fontFamily;
-    final TextTheme baseTextTheme =
-        isArabic ? GoogleFonts.cairoTextTheme() : GoogleFonts.poppinsTextTheme();
+    final String? fontFamily = _safeFontFamily(isArabic);
+    final TextTheme baseTextTheme = _safeTextTheme(isArabic);
 
     return ThemeData(
       useMaterial3: true,
@@ -194,13 +216,8 @@ class AppTheme {
   static ThemeData themeData(Locale locale) {
     final isArabic = locale.languageCode == 'ar';
 
-    final String? fontFamily = isArabic
-        ? GoogleFonts.cairo().fontFamily
-        : GoogleFonts.poppins().fontFamily;
-
-    final TextTheme baseTextTheme = isArabic
-        ? GoogleFonts.cairoTextTheme()
-        : GoogleFonts.poppinsTextTheme();
+    final String? fontFamily = _safeFontFamily(isArabic);
+    final TextTheme baseTextTheme = _safeTextTheme(isArabic);
 
     return ThemeData(
       useMaterial3: true,
