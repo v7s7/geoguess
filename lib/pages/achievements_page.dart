@@ -55,7 +55,7 @@ class _AchievementsPageState extends State<AchievementsPage> {
       }
       _previousUnlocked = Set<String>.from(p?.achievements ?? []);
       setState(() { _profile = p; _loading = false; });
-    });
+    }, onError: (_) { if (mounted) setState(() => _loading = false); });
   }
 
   @override

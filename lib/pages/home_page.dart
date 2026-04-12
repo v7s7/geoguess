@@ -78,9 +78,10 @@ class _HomePageState extends State<HomePage> {
     final uid = context.read<AuthService>().uid;
     if (uid == null) return;
     _profileSub?.cancel();
-    _profileSub = UserService().watchProfile(uid).listen((p) {
-      if (mounted) setState(() => _userProfile = p);
-    });
+    _profileSub = UserService().watchProfile(uid).listen(
+      (p) { if (mounted) setState(() => _userProfile = p); },
+      onError: (_) {}, // ignore transient Firestore errors; retried automatically
+    );
   }
 
   void _setupChallengeListener() {
@@ -91,13 +92,16 @@ class _HomePageState extends State<HomePage> {
     _challengeSub?.cancel();
     _listeningUid = uid;
     if (uid == null) return;
-    _challengeSub = FriendsService().watchIncomingChallenges(uid).listen((challenges) {
-      for (final c in challenges) {
-        if (_shownChallengeIds.contains(c.id)) continue;
-        _shownChallengeIds.add(c.id);
-        if (mounted) _showChallengeDialog(c);
-      }
-    });
+    _challengeSub = FriendsService().watchIncomingChallenges(uid).listen(
+      (challenges) {
+        for (final c in challenges) {
+          if (_shownChallengeIds.contains(c.id)) continue;
+          _shownChallengeIds.add(c.id);
+          if (mounted) _showChallengeDialog(c);
+        }
+      },
+      onError: (_) {}, // challenges index may not be deployed yet; fail silently
+    );
   }
 
   Future<void> _showChallengeDialog(GameChallenge challenge) async {

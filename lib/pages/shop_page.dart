@@ -32,9 +32,10 @@ class _ShopPageState extends State<ShopPage> {
       setState(() => _loading = false);
       return;
     }
-    _sub = UserService().watchProfile(uid).listen((p) {
-      if (mounted) setState(() { _profile = p; _loading = false; });
-    });
+    _sub = UserService().watchProfile(uid).listen(
+      (p) { if (mounted) setState(() { _profile = p; _loading = false; }); },
+      onError: (_) { if (mounted) setState(() => _loading = false); },
+    );
   }
 
   @override
